@@ -212,7 +212,7 @@ public class Element {
             case Ref.TAG_DESC       -> toret = new Ref( text );
             case UnordList.TAG_DESC -> toret = new UnordList( text );
             case OrdList.TAG_DESC   -> toret = new OrdList( text );
-            case Head.TAG_DESC      -> toret = new Head( text );
+//            case Head.TAG_DESC      -> toret = new Head( text );
             default    ->
                 throw new ParseException( "tag not manageable: '" + tagDesc + "'" );
         }
