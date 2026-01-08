@@ -183,6 +183,7 @@ public class Element {
                     throws ParseException
     {
         Element toret = null;
+        int headingLevel = 2;
         
         // Chk
         if ( tagDesc == null ) {
@@ -201,6 +202,12 @@ public class Element {
             tagDesc = tagDesc.substring( 1 );
         }
         
+        // Is it the heading tag?
+        if ( tagDesc.charAt( 0 ) == 'h' ) {
+            headingLevel = tagDesc.charAt( 1 ) - '0';
+            tagDesc = "h";
+        }
+        
         switch ( tagDesc ) {
             case Text.TAG_DESC      -> toret = new Text( text );
             case Par.TAG_DESC       -> toret = new Par( text );
@@ -212,8 +219,8 @@ public class Element {
             case Ref.TAG_DESC       -> toret = new Ref( text );
             case UnordList.TAG_DESC -> toret = new UnordList( text );
             case OrdList.TAG_DESC   -> toret = new OrdList( text );
-//            case Head.TAG_DESC      -> toret = new Head( text );
-            default    ->
+            case Head.TAG_DESC      -> toret = new Head( headingLevel, text );
+            default                 ->
                 throw new ParseException( "tag not manageable: '" + tagDesc + "'" );
         }
         

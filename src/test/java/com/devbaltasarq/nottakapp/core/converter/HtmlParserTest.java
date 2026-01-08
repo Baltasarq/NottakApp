@@ -15,6 +15,7 @@ import com.devbaltasarq.nottakapp.core.converter.elements.Entry;
 import com.devbaltasarq.nottakapp.core.converter.elements.Text;
 import com.devbaltasarq.nottakapp.core.converter.elements.Italic;
 import com.devbaltasarq.nottakapp.core.converter.elements.Bold;
+import com.devbaltasarq.nottakapp.core.converter.elements.Head;
 
 
 /** Tests the Parser for HTML.
@@ -219,7 +220,7 @@ public class HtmlParserTest {
     public void testHeading()
     {
         String html = "<html><body><h1>Test title</h1>"
-                        + "<p><h2>Test sub</h2></body></html>";
+                        + "<p></p><h2>Test sub</h2></body></html>";
         final var PARSER = new HtmlParser( new HtmlScanner( html ) );
         
         try {
@@ -230,7 +231,29 @@ public class HtmlParserTest {
         
         final Root ROOT = PARSER.getRoot();
         
-        assertEquals( 2, ROOT.count() );
+        assertEquals( 3, ROOT.count() );
+        assertTrue( ROOT.get( 0 ) instanceof Head );
+        assertTrue( ROOT.get( 1 ) instanceof Par );
+        assertTrue( ROOT.get( 2 ) instanceof Head );
+        
+        final var H1 = (Head) ROOT.get( 0 );
+        final var P = (Par) ROOT.get( 1 );
+        final var H2 = (Head) ROOT.get( 2 );
+        
+        // H1
+        assertEquals( 1, H1.getLevel() );
+        assertEquals( 1, H1.count() );
+        assertTrue( H1.get( 0 ) instanceof Text );
+        assertEquals( "Test title", H1.get( 0 ).getText() );
+        
+        // P
+        assertEquals( 0, P.count() );
+        
+        // H2
+        assertEquals( 2, H2.getLevel() );
+        assertEquals( 1, H2.count() );
+        assertTrue( H2.get( 0 ) instanceof Text );
+        assertEquals( "Test sub", H2.get( 0 ).getText() );
     }
     
     private HtmlParser parser1;
