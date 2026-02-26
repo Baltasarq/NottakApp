@@ -5,6 +5,8 @@ package com.devbaltasarq.nottakapp.core.converter.elements;
 
 
 import com.devbaltasarq.nottakapp.core.converter.Element;
+import com.devbaltasarq.nottakapp.core.converter.ElementDto;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,30 +15,45 @@ import java.util.List;
   * @author baltasarq
   */
 public class Head extends Element {
-    public static final String TAG_DESC = "h";
+    public static final String NAME = "h";
+    public static final String ETQ_LEVEL = "lvl";
     
-    public Head(int level, String text)
+    public Head(final ElementDto ELTO)
     {
-        this( level, text, new ArrayList<>() );
+        this( ELTO, new ArrayList<>() );
     }
     
-    public Head(int level, String text, List<Element> subElements)
+    public Head(final ElementDto ELTO, List<Element> subElements)
     {
-        super( TAG_DESC, text, subElements );
-        this.level = level;
+        super( ELTO, subElements );
+    }
+    
+    @Override
+    public String getName()
+    {
+        return NAME + ( (char) ( '0' + this.getLevel() ) );
     }
     
     /** @return the heading level. */
     public int getLevel()
     {
-        return this.level;
+        String lvl = this.getAttributes().getOrDefault( ETQ_LEVEL, "2" );
+        int toret;
+        
+        try {
+            toret = Integer.parseInt( lvl.trim() );
+        } catch(NumberFormatException exc) {
+            toret = 2;
+        }
+        
+        return toret;
     }
     
     @Override
     public String toString()
     {
-        return String.format( "Heading %s", super.toString() );
+        return String.format( "Heading (%d) %s",
+                                this.getLevel(),
+                                super.toString() );
     }
-    
-    private int level;
 }

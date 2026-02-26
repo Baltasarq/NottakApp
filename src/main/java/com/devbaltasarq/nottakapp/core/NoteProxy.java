@@ -105,7 +105,7 @@ public final class NoteProxy {
 
                 
                 while ( SCAN.hasNext() ) {
-                    text += SCAN.nextLine();
+                    text += SCAN.nextLine() + "\n";
                 }
             } catch(NoSuchElementException | FileNotFoundException exc) {
                 LOG.log( Level.WARNING, "no data found in note" );
@@ -120,6 +120,11 @@ public final class NoteProxy {
         return this.note;
     }
     
+    /** Saves the note, provided the note has been loaded.
+      *  Otherwise, it is ignored.
+      * @param pathToNotesDir the path for notes.
+      * @throws IOException if writing goes wrong.
+     */
     public void save(String pathToNotesDir) throws IOException
     {
         if ( this.note != null ) {
@@ -135,6 +140,7 @@ public final class NoteProxy {
         }
     }
     
+    /** Delete the note. */
     public void delete()
     {
         try {

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Locale;
 
 
 /** Represents a simple note.
@@ -111,7 +112,7 @@ public class Note {
       */
     public String buildFileName(String notesDir)
     {
-        String toret =  this.getId().toString().toLowerCase();
+        String toret =  this.getId().toString().toLowerCase( Locale.US );
         
         toret += FILE_EXT;
         return new File( notesDir, toret ).getAbsolutePath();

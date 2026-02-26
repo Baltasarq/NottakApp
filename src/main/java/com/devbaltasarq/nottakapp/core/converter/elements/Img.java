@@ -5,6 +5,8 @@ package com.devbaltasarq.nottakapp.core.converter.elements;
 
 
 import com.devbaltasarq.nottakapp.core.converter.Element;
+import com.devbaltasarq.nottakapp.core.converter.ElementDto;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,16 +15,30 @@ import java.util.List;
   * @author baltasarq
   */
 public class Img extends Element {
-    public final static String TAG_DESC = "img";
+    public final static String NAME = "img";
+    public final static String LBL_SRC = "src";
+    public final static String LBL_TITLE = "alt";
     
-    public Img(String text)
+    public Img(final ElementDto ELTO)
     {
-        this( text, new ArrayList<>() );
+        this( ELTO, new ArrayList<>() );
     }
     
-    public Img(String text, List<Element> subElements)
+    public Img(final ElementDto ELTO, List<Element> subElements)
     {
-        super( TAG_DESC, text, subElements );
+        super( ELTO, subElements );
+    }
+    
+    /** @return the src tag of the image. */
+    public String getSrc()
+    {
+        return this.getAttributes().getOrDefault( LBL_SRC, "" );
+    }
+    
+    /** @return the title of the image. */
+    public String getTitle()
+    {
+        return this.getAttributes().getOrDefault( LBL_TITLE, "" );
     }
     
     @Override

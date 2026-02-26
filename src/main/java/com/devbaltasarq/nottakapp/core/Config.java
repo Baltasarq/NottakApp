@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.lang.reflect.Type;
+import java.util.Locale;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -30,7 +31,6 @@ public class Config {
         CONFIG_DIR,
         CONFIG_FILE_NAME,
         CONFIG_FILE_PATH,
-        DATA_DIR_NAME,
         DATA_DIR_PATH,
         WIDTH,
         HEIGHT,
@@ -38,14 +38,12 @@ public class Config {
         LEFT
     }
     
-    private Config(String appName, String dataDirName)
+    private Config(String appName)
     {
         appName = appName.trim().toLowerCase();
-        dataDirName = dataDirName.trim().toLowerCase();
         
         this.configValues = new EnumMap<>( Key.class );
         this.configValues.put( Key.APP_NAME, appName );
-        this.configValues.put( Key.DATA_DIR_NAME, dataDirName );
         this.configValues.put( Key.CONFIG_FILE_NAME, appName + ".cfg.json" );
         this.init();
     }
@@ -69,7 +67,7 @@ public class Config {
       */
     private String buildConfigDirPath()
     {
-        String strConfigDirName = AppInfo.NAME.toLowerCase();
+        String strConfigDirName = AppInfo.NAME.toLowerCase( Locale.US );
         String strHomeDir = this.configValues.get( Key.HOME_DIR );
         
         assert strHomeDir != null: "buildConfigDirectory(): "
@@ -100,19 +98,20 @@ public class Config {
         return TORET.getAbsolutePath();
     }
     
-    /** Builds and creates the notes path.
-      * Beware that HOME_DIR and DATA_DIR_NAME must have already been set.
+    /** Builds and creates the notes path whe nit does not exist.
+      * Beware that HOME_DIR must have already been set.
       * @return the dir, as a string.
       */
     private String buildDataDirPath()
     {
+        String appName = this.configValues.get( Key.APP_NAME );
         String strHomeDirPath = this.configValues.get( Key.HOME_DIR );
-        String dataDirName = this.configValues.get( Key.DATA_DIR_NAME );
         
+        assert strHomeDirPath != null: "buildDataDirPath(): app namecannot be null";
         assert strHomeDirPath != null: "buildDataDirPath(): home dir cannot be null";
-        assert dataDirName != null: "buildDataDirPath(): data dir cannot be null";
         
-        final var TORET = new File( strHomeDirPath, dataDirName );        
+        final var TORET = new File( strHomeDirPath,
+                                    appName.toUpperCase( Locale.US ) );
         return TORET.getAbsolutePath();
     }
     
@@ -180,13 +179,13 @@ public class Config {
         }
     }
     
-    public static Config restore(String appName, String dataDirName)
+    public static Config restore(String appName)
     {
         if ( uniqueInstance != null ) {
             return uniqueInstance;
         }
         
-        uniqueInstance = new Config( appName, dataDirName );
+        uniqueInstance = new Config( appName );
         final Gson GSON = new Gson();
         final String FILE_PATH = uniqueInstance.get( Key.CONFIG_FILE_PATH );
         
@@ -197,7 +196,7 @@ public class Config {
             
             if ( MAP != null ) {            
                 for(final Map.Entry<String, String> ENTRY: MAP.entrySet()) {
-                    final String STR_KEY = ENTRY.getKey().trim().toUpperCase();
+                    final String STR_KEY = ENTRY.getKey().trim().toUpperCase( Locale.US );
                     final Key KEY = Key.valueOf( STR_KEY );
 
                     if ( KEY != null ) {

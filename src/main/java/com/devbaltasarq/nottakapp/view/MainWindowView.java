@@ -25,12 +25,16 @@ import javax.swing.BorderFactory;
 import com.devbaltasarq.nottakapp.core.AppInfo;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.Image;
+import java.awt.Toolkit;
 
 
 /** The Swing view for this window.
   * @author baltasarq
   */
 public class MainWindowView extends JFrame {
+    private static final String ETQ_ICON_APP = "nottakapp.png";
+    
     private final Dimension SIZE = new Dimension( 600, 440 );
     
     public MainWindowView(Font font)
@@ -65,10 +69,24 @@ public class MainWindowView extends JFrame {
         PNL_MAIN.add( this.buildSplitPanel(), BorderLayout.CENTER );
         PNL_MAIN.add( this.buildLogViewer(), BorderLayout.PAGE_END );       
         
+        this.buildIcons();
         this.setJMenuBar( this.buildMainMenu() );
         this.setLayout( MAIN_BLAY );
         this.add( PNL_MAIN, BorderLayout.CENTER );
         this.add( this.buildStatusBar(), BorderLayout.PAGE_END );
+        this.setIconImage( this.iconApp );
+    }
+    
+    /** Retrieves icons from jar for future use */
+    private void buildIcons()
+    {
+        try {
+            var url = ClassLoader.getSystemResource( ETQ_ICON_APP );
+            this.iconApp = Toolkit.getDefaultToolkit().getImage( url );            
+        } catch(Exception exc)
+        {
+            System.err.println( "Could not load icon `" + ETQ_ICON_APP + "` from resources.");
+        }
     }
     
     private JPanel buildLogViewer()
@@ -147,10 +165,16 @@ public class MainWindowView extends JFrame {
         this.opDeleteNote.setAccelerator(
                 KeyStroke.getKeyStroke( KeyEvent.VK_DELETE,
                                             InputEvent.CTRL_DOWN_MASK ));
+        this.opPreferences = new JMenuItem( "Preferences" );
+        this.opPreferences.setMnemonic( 'p' );
+        this.opPreferences.setAccelerator(
+                KeyStroke.getKeyStroke( KeyEvent.VK_F5,
+                                            InputEvent.CTRL_DOWN_MASK ));
 
         EDIT.setMnemonic( 'e' );
         EDIT.add( this.opNewNote );
         EDIT.add( this.opDeleteNote );
+        EDIT.add( this.opPreferences );
         
         this.opViewLog = new JMenuItem( "View log" );
         this.opViewLog.setMnemonic( 'l' );
@@ -203,6 +227,12 @@ public class MainWindowView extends JFrame {
         return this.opNewNote;
     }
     
+    /** @return the preferences option. */
+    public JMenuItem getOpPreferences()
+    {
+        return this.opPreferences;
+    }
+    
     /** @return the delete note option. */
     public JMenuItem getOpDeleteNote()
     {
@@ -250,6 +280,7 @@ public class MainWindowView extends JFrame {
     private JMenuItem opAbout;
     private JMenuItem opNewNote;
     private JMenuItem opDeleteNote;
+    private JMenuItem opPreferences;
     private JMenuItem opViewLog;
     private EditorView editorView;
     private JSplitPane mainSplitPanel;
@@ -257,4 +288,5 @@ public class MainWindowView extends JFrame {
     private JTextArea logViewerView;
     private JPanel pnlLog;
     private Font font;
+    private Image iconApp;
 }

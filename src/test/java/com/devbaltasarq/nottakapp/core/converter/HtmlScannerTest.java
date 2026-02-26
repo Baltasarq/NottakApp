@@ -4,6 +4,8 @@
 package com.devbaltasarq.nottakapp.core.converter;
 
 
+import com.devbaltasarq.nottakapp.core.converter.html.HtmlScanner;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,7 +40,7 @@ public class HtmlScannerTest {
     @Test
     public void testCursor()
     {
-        final String TEXT = this.scanner1.getWholeText();
+        final String TEXT = this.scanner1.getInput();
         
         for(int i = 0; i < this.scanner1.size(); ++i) {
             assertEquals( TEXT.charAt( i ), this.scanner1.getCurrentChar() );
@@ -80,23 +82,28 @@ public class HtmlScannerTest {
         this.scanner3.match( "text" );
     }
     
+    private String getTagNameIn(final Map<String, String> TAG_INFO)
+    {
+        return TAG_INFO.get( HtmlScanner.LBL_TAG_NAME );
+    }
+    
     private void testReadTagFor(HtmlScanner scanner)
     {
         assertEquals( HtmlScanner.TokenType.TAG, scanner.getTokenType() );
-        assertEquals( "html", scanner.readTag() );
-        assertEquals( "head", scanner.readTag() );
-        assertEquals( "title", scanner.readTag() );
+        assertEquals( "html", this.getTagNameIn( scanner.readTag() ) );
+        assertEquals( "head", this.getTagNameIn( scanner.readTag() ));
+        assertEquals( "title", this.getTagNameIn( scanner.readTag() ));
         
         assertEquals( "Hola, mundo!", scanner.readText() );
         
-        assertEquals( "/title", scanner.readTag() );
-        assertEquals( "/head", scanner.readTag() );
-        assertEquals( "body", scanner.readTag() );
+        assertEquals( "/title", this.getTagNameIn( scanner.readTag() ));
+        assertEquals( "/head", this.getTagNameIn( scanner.readTag() ));
+        assertEquals( "body", this.getTagNameIn( scanner.readTag() ));
         
         assertEquals( "Hola!", scanner.readText() );
         
-        assertEquals( "/body", scanner.readTag() );
-        assertEquals( "/html", scanner.readTag() );
+        assertEquals( "/body", this.getTagNameIn( scanner.readTag() ));
+        assertEquals( "/html", this.getTagNameIn( scanner.readTag() ));
     }
 
     /** Test of HtmlScanner::readTag(). */
@@ -133,15 +140,32 @@ public class HtmlScannerTest {
     }
     
     @Test
+    public void testComplexStructure()
+    {
+        final var SCANNER = new HtmlScanner( "<body><p>test <b>this</b></p></body>" );
+        
+        assertEquals( "body", this.getTagNameIn( SCANNER.readTag() ));
+        assertEquals( "p", this.getTagNameIn( SCANNER.readTag() ));
+        assertEquals( "test", SCANNER.readText() );
+        assertEquals( "b", this.getTagNameIn(  SCANNER.readTag() ));
+        assertEquals( "this", SCANNER.readText() );
+        assertEquals( "/b", this.getTagNameIn(  SCANNER.readTag() ));
+        assertEquals( "/p", this.getTagNameIn( SCANNER.readTag() ));
+        assertEquals( "/body", this.getTagNameIn( SCANNER.readTag() ));
+    }
+    
+    @Test
     public void testComplexTag()
     {
-        final var SCANNER = new HtmlScanner( "<body><p style=\"margin-top: 0\">test</p></body>" );
+        final String ATTR_NAME = "Style";
+        final String ATTR_VALUE = "margin-top: 0";
+        final String ATTR = ATTR_NAME + " = " + '"' + ATTR_VALUE + '"';
+        final var SCANNER = new HtmlScanner( "<p " + ATTR + ">test</p>" );
+        final Map<String, String> TAG_INFO = SCANNER.readTag();
+        final String TAG_NAME = this.getTagNameIn( TAG_INFO );
         
-        assertEquals( "body", SCANNER.readTag() );
-        assertEquals( "p", SCANNER.readTag() );
-        assertEquals( "test", SCANNER.readText() );
-        assertEquals( "/p", SCANNER.readTag() );
-        assertEquals( "/body", SCANNER.readTag() );
+        assertEquals( "p", TAG_NAME );
+        assertEquals( ATTR_VALUE, TAG_INFO.get( ATTR_NAME.toLowerCase() ) );
     }
     
     private HtmlScanner scanner1;

@@ -4,12 +4,13 @@
 package com.devbaltasarq.nottakapp.view;
 
 
-import java.util.logging.Logger;
 import java.awt.event.WindowListener;
 import java.awt.event.WindowEvent;
 import java.awt.Point;
+import java.awt.Font;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import java.util.logging.Logger;
 
 import com.devbaltasarq.nottakapp.core.LogWriter;
 import com.devbaltasarq.nottakapp.core.AppInfo;
@@ -17,7 +18,6 @@ import com.devbaltasarq.nottakapp.core.Config;
 import com.devbaltasarq.nottakapp.core.Notebook;
 import com.devbaltasarq.nottakapp.core.NoteProxy;
 import com.devbaltasarq.nottakapp.core.Note;
-import java.awt.Font;
 
 
 /** The main window for the application.
@@ -31,7 +31,7 @@ public class MainWindow {
         final var FONT = new Font( Font.SANS_SERIF, Font.PLAIN, 16 );
         
         this.working = false;
-        this.config = Config.restore( AppInfo.NAME, AppInfo.NOTES_DIR_NAME );
+        this.config = Config.restore( AppInfo.NAME );
         this.notebook = Notebook.restoreFrom( this.config.get( Config.Key.DATA_DIR_PATH ) );
         this.currentNote = null;
         
@@ -53,6 +53,9 @@ public class MainWindow {
                                         (o) -> this.getView().showLog() );
         this.view.getOpDeleteNote().addActionListener(
                                         (o) -> this.deleteCurrentNote() );
+        
+        this.view.getOpPreferences().addActionListener(
+                                        (o) -> this.showPreferences() );
         
         this.view.addWindowListener( this.mainWindowListener );
         this.applyConfig();
@@ -91,7 +94,7 @@ public class MainWindow {
             this.notesTree.add( PROXY );
             LOG.info(
                     String.format(
-                            "New note created: '%s'" + NOTE.getIdAsString() ));
+                            "New note created: '%s'", NOTE.getIdAsString() ));
             this.selectedTreeNode( PROXY );
             this.working = false;
         }
@@ -106,6 +109,13 @@ public class MainWindow {
             this.editor.setNote( null );
             this.working = false;
         }
+    }
+    
+    public void showPreferences()
+    {
+        var dlg = new Preferences( this.getView(), this.config, this.notebook );
+        
+        dlg.run();
     }
 
     public void selectedTreeNode(NoteProxy note)
@@ -159,12 +169,7 @@ public class MainWindow {
         this.setStatus( MSG_UPDATING );
         LOG.entering( "MainWindow", "update" );
         
-        this.notesTree.removeAll();
-        
-        for(NoteProxy note: this.notebook.getAllNotes()) {
-            this.notesTree.add( note );
-        }
-        
+        this.notesTree.refreshAll();
         this.notesTree.expandAll();
         this.updateEditor( this.currentNote );
         

@@ -100,9 +100,13 @@ public class NotesTree {
     
     public void refreshAll()
     {
+        final var ALL_NOTES_PROXY = this.notebook.getAllNotes();
+        
         this.removeAll();
-
-        for(NoteProxy np: this.notebook.getAllNotes()) {
+        ALL_NOTES_PROXY.sort(
+                (np1, np2) -> np1.getTitle().compareTo( np2.getTitle() ) );
+        
+        for(NoteProxy np: ALL_NOTES_PROXY) {
             this.add( np );
         }
         

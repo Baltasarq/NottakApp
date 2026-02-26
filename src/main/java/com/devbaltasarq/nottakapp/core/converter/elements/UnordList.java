@@ -5,6 +5,7 @@ package com.devbaltasarq.nottakapp.core.converter.elements;
 
 
 import com.devbaltasarq.nottakapp.core.converter.Element;
+import com.devbaltasarq.nottakapp.core.converter.ElementDto;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,16 +14,16 @@ import java.util.List;
   * @author baltasarq
   */
 public class UnordList extends Element {
-    public final static String TAG_DESC = "ul";
+    public final static String NAME = "ul";
     
-    public UnordList(String text)
+    public UnordList(final ElementDto ELTO)
     {
-        this( text, new ArrayList<>() );
+        this( ELTO, new ArrayList<>() );
     }
     
-    public UnordList(String text, List<Element> subElements)
+    public UnordList(final ElementDto ELTO, List<Element> subElements)
     {
-        super( TAG_DESC, text, subElements );
+        super( ELTO, subElements );
     }
     
     @Override

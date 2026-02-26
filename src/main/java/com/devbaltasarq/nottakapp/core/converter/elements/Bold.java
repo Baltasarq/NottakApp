@@ -5,6 +5,8 @@ package com.devbaltasarq.nottakapp.core.converter.elements;
 
 
 import com.devbaltasarq.nottakapp.core.converter.Element;
+import com.devbaltasarq.nottakapp.core.converter.ElementDto;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,16 +15,16 @@ import java.util.List;
   * @author baltasarq
   */
 public class Bold extends Element {
-    public static final String TAG_DESC = "b";
+    public static final String NAME = "b";
     
-    public Bold(String text)
+    public Bold(final ElementDto ELTO)
     {
-        this( text, new ArrayList<>() );
+        this( ELTO, new ArrayList<>() );
     }
     
-    public Bold(String text, List<Element> subElements)
+    public Bold(final ElementDto ELTO, List<Element> subElements)
     {
-        super( TAG_DESC, text, subElements );
+        super( ELTO, subElements );
     }
     
     @Override

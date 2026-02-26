@@ -5,6 +5,8 @@ package com.devbaltasarq.nottakapp.core.converter.elements;
 
 
 import com.devbaltasarq.nottakapp.core.converter.Element;
+import com.devbaltasarq.nottakapp.core.converter.ElementDto;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,16 +15,23 @@ import java.util.List;
   * @author baltasarq
   */
 public class Text extends Element {
-    public static final String TAG_DESC = "txt";
+    public static final String NAME = "txt";
 
-    public Text(String text)
+    public Text(final ElementDto ELTO)
     {
-        this( text, new ArrayList<>() );
+        this( ELTO, new ArrayList<>() );
     }
     
-    public Text(String text, List<Element> subElements)
+    public Text(final ElementDto ELTO, List<Element> subElements)
     {
-        super( TAG_DESC, text, subElements );
+        super( ELTO, subElements );
+    }
+    
+    /** This element should not be closed. */
+    @Override
+    public boolean needsClosing()
+    {
+        return false;
     }
     
     @Override

@@ -7,6 +7,10 @@ package com.devbaltasarq.nottakapp.core;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileFilter;
+import java.nio.file.DirectoryIteratorException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.List;
 import java.util.Set;
@@ -105,6 +109,41 @@ public final class Notebook {
         }
         
         return TORET;
+    }
+    
+    /** Moves all notes to a new path.
+      * @param newPath
+      * @param notebook
+      * @throws IOException if writing goes wrong.
+      */
+    public static void moveTo(String newPath, Notebook notebook) throws IOException
+    {
+        final String FILE_FILTER = "*{" + Note.FILE_EXT + "}";
+        final Path OLD_PATH = Path.of( notebook.getPath() );
+        
+        if ( !OLD_PATH.toString().equals( newPath ) ) {
+            for(NoteProxy proxy: notebook.notesIndexed.values()) {
+                proxy.save( OLD_PATH.toString() );
+            }
+            
+            Files.createDirectories( Path.of( newPath ) );
+            
+            try (var stream = Files.newDirectoryStream( OLD_PATH, FILE_FILTER ))
+            {
+                for (Path noteFile: stream) {
+                    String fileName = noteFile.getFileName().toString();
+                    Files.move(
+                            noteFile,
+                            Path.of( newPath , fileName ),
+                            StandardCopyOption.REPLACE_EXISTING,
+                            StandardCopyOption.ATOMIC_MOVE );
+                }
+            } catch (DirectoryIteratorException exc) {
+                throw new IOException( exc.getMessage() );
+            }
+            
+            Files.deleteIfExists( OLD_PATH );
+        }
     }
     
     private final Map<Id, NoteProxy> notesIndexed;

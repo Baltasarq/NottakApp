@@ -4,7 +4,7 @@
 package com.devbaltasarq.nottakapp.core.converter;
 
 
-import com.devbaltasarq.nottakapp.core.converter.runners.PlainTextRunner;
+import com.devbaltasarq.nottakapp.core.converter.runners.MarkDownRunner;
 import com.devbaltasarq.nottakapp.core.converter.elements.Root;
 import com.devbaltasarq.nottakapp.core.converter.html.HtmlParser;
 import com.devbaltasarq.nottakapp.core.converter.markdown.MDParser;
@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Test the plain text runner.
   * @author baltasarq
   */
-public class PlainTextRunnerTest {
+public class MDRunnerTest {
     @Test
     public void testSimpleTextFromHtml()
     {
@@ -52,7 +52,7 @@ public class PlainTextRunnerTest {
     private void testSimpleText(final String TEXT, final Root ROOT)
     {
         
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
         // When there is only text, automatically a "p" is added.
@@ -82,7 +82,7 @@ public class PlainTextRunnerTest {
     public void testWithParsFromMD()
     {
         final String TEXT = "This is a test.";
-        final var PARSER = new MDParser( TEXT + "\n" + TEXT );
+        final var PARSER = new MDParser( TEXT + "\n" + TEXT + "\n");
         
         try {
             PARSER.parse();
@@ -96,7 +96,7 @@ public class PlainTextRunnerTest {
     private void testTextWithPars(final String TEXT, final Root ROOT)
     {
         
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
         final String RESULTING_TEXT = TEXT + "\n" + TEXT;
@@ -140,7 +140,7 @@ public class PlainTextRunnerTest {
     
     private void testUl(final String TEXT, final Root ROOT)
     {
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
         final String RESULTING_TEXT = "- " + TEXT + "\n - " + TEXT;
@@ -184,7 +184,7 @@ public class PlainTextRunnerTest {
     @Test
     private void testOl(final String TEXT, final Root ROOT)
     {        
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
         final String RESULTING_TEXT = "1. " + TEXT + "\n 2. " + TEXT;
@@ -195,11 +195,11 @@ public class PlainTextRunnerTest {
     public void testHeadingsFromHtml()
     {
         final String TEXT = "This is a test heading.";
-        final var PARSER = new HtmlParser( "<html><body><h1>"
+        final var PARSER = new HtmlParser( "<html><body><h2>"
                                                     + TEXT
-                                                    + "</h1><h2>"
+                                                    + "</h2><h3>"
                                                     + TEXT
-                                                    + "</h2></body></html>" );
+                                                    + "</h3></body></html>" );
         
         try {
             PARSER.parse();
@@ -214,8 +214,8 @@ public class PlainTextRunnerTest {
     public void testHeadingsFromMD()
     {
         final String TEXT = "This is a test heading.";
-        final var PARSER = new MDParser( "# "+ TEXT
-                                            + "\n## " + TEXT );
+        final var PARSER = new MDParser( "## "+ TEXT
+                                            + "\n### " + TEXT );
         
         try {
             PARSER.parse();
@@ -229,10 +229,10 @@ public class PlainTextRunnerTest {
     @Test
     private void testHeadings(final String TEXT, final Root ROOT)
     {
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
-System.out.println( ROOT.toString() );
-        final String RESULTING_TEXT = TEXT + "\n===\n\n" + TEXT + "\n---";
+        
+        final String RESULTING_TEXT = "## " + TEXT + "\n### " + TEXT;
         assertEquals( RESULTING_TEXT, TEXT_RUNNER.toString().trim() );
     }
     
@@ -275,10 +275,11 @@ System.out.println( ROOT.toString() );
     
     private void testBoldItalic(final String TEXT, final Root ROOT)
     {
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
-        final String RESULTING_TEXT = TEXT + TEXT + TEXT;
+        final String RESULTING_TEXT = "**" + TEXT + "** "
+                                            + TEXT + " __" + TEXT + "__";
         assertEquals( RESULTING_TEXT, TEXT_RUNNER.toString().trim() );
     }
     
@@ -286,11 +287,12 @@ System.out.println( ROOT.toString() );
     public void testImgFromHtml()
     {
         final String TEXT = "This is a test.";
-        final var PARSER = new HtmlParser( "<html><body>"
+        final var PARSER = new HtmlParser( "<html><body><p>"
                                                     + TEXT
-                                                    + "<img src='a.jpg'>"
+                                                    + "<img src='a.jpg'"
+                                                        + " alt='" + TEXT + "'>"
                                                     + TEXT
-                                                    + "</body></html>" );
+                                                    + "</p></body></html>" );
         
         try {
             PARSER.parse();
@@ -319,11 +321,12 @@ System.out.println( ROOT.toString() );
     
     private void testImg(final String TEXT, final Root ROOT)
     {
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
-        final String RESULTING_TEXT = TEXT + TEXT;
-        assertEquals( RESULTING_TEXT, TEXT_RUNNER.toString() );
+        final String RESULTING_TEXT = TEXT + " ![" + TEXT + "](a.jpg) "
+                                            + TEXT;
+        assertEquals( RESULTING_TEXT, TEXT_RUNNER.toString().trim() );
     }
     
     @Test
@@ -344,7 +347,7 @@ System.out.println( ROOT.toString() );
             fail( exc.getMessage() );
         }
         
-        this.testWikiRef( TEXT, PARSER.getRoot() );
+        this.testWikiRef( FILE, TEXT, PARSER.getRoot() );
     }
     
     @Test
@@ -362,16 +365,18 @@ System.out.println( ROOT.toString() );
             fail( exc.getMessage() );
         }
         
-        this.testWikiRef( TEXT, PARSER.getRoot() );
+        this.testWikiRef( FILE, TEXT, PARSER.getRoot() );
     }
     
-    private void testWikiRef(final String TEXT, final Root ROOT)
+    private void testWikiRef(final String FILE, final String TEXT, final Root ROOT)
     {
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
-        final String RESULTING_TEXT = TEXT + TEXT + TEXT;
-        assertEquals( RESULTING_TEXT, TEXT_RUNNER.toString() );
+        final String RESULTING_TEXT = TEXT
+                                            + " [" + TEXT + "|"
+                                            + FILE + "] " + TEXT;
+        assertEquals( RESULTING_TEXT, TEXT_RUNNER.toString().trim() );
     }
     
     @Test
@@ -379,12 +384,12 @@ System.out.println( ROOT.toString() );
     {
         final String URL = "http://www.wikipedia.es";
         final String TEXT = "This is a test.";
-        final var PARSER = new HtmlParser( "<html><body>"
+        final var PARSER = new HtmlParser( "<html><body><p>"
                                                     + TEXT
                                                     + "<a href='" + URL + "'>"
                                                     + TEXT + "</a>"
                                                     + TEXT
-                                                    + "</body></html>" );
+                                                    + "</p></body></html>" );
         
         try {
             PARSER.parse();
@@ -392,7 +397,7 @@ System.out.println( ROOT.toString() );
             fail( exc.getMessage() );
         }
         
-        this.testHtmlRef( TEXT, PARSER.getRoot() );
+        this.testHtmlRef( URL, TEXT, PARSER.getRoot() );
     }
     
     @Test
@@ -401,8 +406,8 @@ System.out.println( ROOT.toString() );
         final String URL = "http://www.wikipedia.es";
         final String TEXT = "This is a test.";
         final var PARSER = new MDParser( TEXT
-                                            + "[" + TEXT + "]("
-                                            + URL + ")"
+                                            + " [" + TEXT + "]("
+                                            + URL + ") "
                                             + TEXT );
         
         try {
@@ -411,17 +416,20 @@ System.out.println( ROOT.toString() );
             fail( exc.getMessage() );
         }
         
-        this.testHtmlRef( TEXT, PARSER.getRoot() );
+        this.testHtmlRef( URL, TEXT, PARSER.getRoot() );
     }
     
-    private void testHtmlRef(final String TEXT, final Root ROOT)
+    private void testHtmlRef(final String URL, final String TEXT, final Root ROOT)
     {
         
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
-        final String RESULTING_TEXT = TEXT + TEXT + TEXT;
-        assertEquals( RESULTING_TEXT, TEXT_RUNNER.toString() );
+        final String RESULTING_TEXT = TEXT
+                                            + " [" + TEXT + "]("
+                                            + URL + ") "
+                                            + TEXT;
+        assertEquals( RESULTING_TEXT, TEXT_RUNNER.toString().trim() );
     }
     
     @Test
@@ -429,9 +437,9 @@ System.out.println( ROOT.toString() );
     {
         final String TEXT = "This is a test.";
         final var PARSER = new HtmlParser( "<html><body>"
-                                            + "<input type='checkbox' /> "
+                                            + "<input type='checkbox' > "
                                             + TEXT
-                                            + "<p><input type='checkbox' checked /> "
+                                            + "<p><input type='checkbox' checked/> "
                                             + TEXT
                                             + "</p></body></html>");
         
@@ -462,7 +470,7 @@ System.out.println( ROOT.toString() );
     
     private void testChk(final String TEXT, final Root ROOT)
     {
-        final var TEXT_RUNNER = new PlainTextRunner( ROOT );
+        final var TEXT_RUNNER = new MarkDownRunner( ROOT );
         TEXT_RUNNER.run();
         
         final String RESULTING_TEXT = "[ ] " + TEXT

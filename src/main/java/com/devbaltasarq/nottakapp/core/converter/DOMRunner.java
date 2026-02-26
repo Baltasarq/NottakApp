@@ -3,8 +3,7 @@
 
 package com.devbaltasarq.nottakapp.core.converter;
 
-import java.util.List;
-import java.util.ArrayList;
+
 import java.util.function.Consumer;
 
 import com.devbaltasarq.nottakapp.core.converter.elements.Root;
@@ -18,7 +17,7 @@ public class DOMRunner {
     {
         this.root = root;
         this.visitor = e -> {};
-        this.pending = new ArrayList<>( root.count() * 2 );
+        this.textResult = new StringBuilder();
     }
     
     /** Change the lambda for the visitor.
@@ -32,24 +31,72 @@ public class DOMRunner {
     /** Execute the running all over the elements. */
     public void run()
     {
-        // Iterative deep first
-        this.pending.clear();
-        this.pending.add( this.root );
-        
-        while( !this.pending.isEmpty() ) {
-            this.current = this.pending.getLast();
-
-            if ( !this.current.isClosing() ) {
-                if ( this.current != this.root ) {
-                    this.pending.add( this.current.copyAsClosing() );
-                }
-
-                this.pending.addAll( this.current.getAll().reversed() );
-            }
+        this.runOver( this.getRoot() );
+    }
+    
+    private void runOver(Element elto)
+    {
+        for(final Element SUB_ELTO: elto.getAll()) {
+            this.visitor.accept( SUB_ELTO );
+            runOver( SUB_ELTO );
             
-            this.visitor.accept(this.current );
-            this.pending.remove( this.current );
+            if ( SUB_ELTO.needsClosing() ) {
+                this.visitor.accept( SUB_ELTO.copyAsClosing() );
+            }
         }
+    }
+    
+    /** @return the last char of the resulting text. */
+    protected char getResultTextLastChar()
+    {
+        char toret = '\0';
+        int size = this.textResult.length();
+        
+        if ( size > 0 ) {
+            toret = this.textResult.charAt( size - 1 );
+        }
+        
+        return toret;
+    }
+    
+    /** Eliminates the ending spaces at the end of the result text. */
+    protected void rtrimTextResult()
+    {
+        int last = this.textResult.length() - 1;
+     
+        while ( last >= 0
+             && Character.isSpaceChar( this.textResult.charAt( last ) ) )
+        {
+            last -= 1;
+        }
+        
+        this.textResult.delete( last + 1, this.textResult.length() );
+    }
+    
+    /** Appends text to the result.
+      * @param txt the text to append to the result.
+      */
+    protected void addToTextResult(String txt)
+    {
+        this.textResult.append( txt );
+    }
+    
+    /** Appends a char to the result.
+      * @param ch the char to append to the result.
+      */
+    protected void addToTextResult(char ch)
+    {
+        this.textResult.append( ch );
+    }
+    
+    /** @return true if text ends with the given postfix.
+      * @param POSTFIX a given string to check the ending of the text with.
+      */
+    protected boolean textResultEndsWith(final String POSTFIX)
+    {
+        return this.textResult
+                    .substring( this.textResult.length() - POSTFIX.length() )
+                        .equals( POSTFIX );
     }
     
     /** @return the root element of the DOM. */
@@ -58,8 +105,19 @@ public class DOMRunner {
         return this.root;
     }
     
+    /** @return the result text. */
+    public String getResultText()
+    {
+        return this.textResult.toString();
+    }
+    
+    @Override
+    public String toString()
+    {
+        return this.textResult.toString();
+    }
+    
     private Consumer<Element> visitor;
-    private Element current;
+    private final StringBuilder textResult;
     private final Root root;
-    private final List<Element> pending;
 }

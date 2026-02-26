@@ -5,6 +5,7 @@ package com.devbaltasarq.nottakapp.core.converter.elements;
 
 
 import com.devbaltasarq.nottakapp.core.converter.Element;
+import com.devbaltasarq.nottakapp.core.converter.ElementDto;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +21,15 @@ public class Root extends Element {
     
     public Root(List<Element> subElements)
     {
-        super( "", "", subElements );
+        super( new ElementDto( "", "" ), subElements );
+        this.replaceParent( this );
+    }
+    
+    /** This element should not be closed. */
+    @Override
+    public boolean needsClosing()
+    {
+        return false;
     }
     
     @Override

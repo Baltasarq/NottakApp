@@ -5,13 +5,16 @@
     <artifactId>NottakApp</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
-        <exec.mainClass>com.devbaltasarq.nottakapp.NottakApp</exec.mainClass>
+        <exec.mainClass>com.devbaltasarq.nottakapp.App</exec.mainClass>
     </properties>
+    
     <name>NottakApp</name>
     <description>A note-taking application in plain-text files.</description>
+    
     <dependencies>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -44,29 +47,66 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    
     <build>
         <resources>
             <resource>
-              <directory>src/main/assets</directory>
+                <directory>src/main/assets</directory>
+                <includes>
+                    <include>**/*</include>
+                </includes>
             </resource>
         </resources>
+
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <version>3.4.2</version>
-            <configuration>
-              <archive>
-                <index>true</index>
-                <manifest>
-                  <mainClass>${exec.mainClass}</mainClass>
-                  <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                  <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                  <addClasspath>true</addClasspath>
-                </manifest>
-              </archive>
-            </configuration>
-          </plugin>
+            <plugin>
+              <!-- Maven Jar Plugin -->
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jar-plugin</artifactId>
+              <version>3.4.2</version>
+              <configuration>
+                <archive>
+                  <index>true</index>
+                  <manifest>
+                    <mainClass>${exec.mainClass}</mainClass>
+                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                    <addClasspath>true</addClasspath>
+                  </manifest>
+                </archive>
+              </configuration>
+            </plugin>
+          
+            <!-- Maven Assembly Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.7.1</version>
+                <configuration>
+                    <descriptorRefs>
+                        <!-- This creates a JAR with all dependencies -->
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>${exec.mainClass}</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <!-- Bind to the package phase -->
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+          
         </plugins>
   </build>
 </project>

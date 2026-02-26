@@ -1,10 +1,13 @@
 // NotakApp (c) 2025 Baltasar MIT License <baltasarq@gmail.com>
 
 
-package com.devbaltasarq.nottakapp.core.converter;
+package com.devbaltasarq.nottakapp.core.converter.html;
 
 
+import com.devbaltasarq.nottakapp.core.converter.Scanner;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 
@@ -12,12 +15,16 @@ import java.util.logging.Logger;
 /** A scanner for HTML documents.
   * @author baltasarq
   */
-public class HtmlScanner {
-    final private static Logger LOG = Logger.getLogger( HtmlScanner.class.getSimpleName() );
-    private final char CH_OPEN_TAG = '<';
-    private final char CH_CLOSE_TAG = '>';
-    private final char CH_SPECIAL_CHAR = '&';
-    private final char CH_SEMICOLON = ';';
+public class HtmlScanner extends Scanner {
+    public final static String LBL_ERROR = "!?(ERR)";
+    public final static String LBL_TAG_NAME = "!?(TAG)";
+    private final static Logger LOG = Logger.getLogger( HtmlScanner.class.getSimpleName() );
+    private final static char CH_OPEN_TAG = '<';
+    private final static char CH_CLOSE_TAG = '>';
+    private final static String CHS_TEXT_DELIMITER = "'\"";
+    private final static char CH_SELF_CLOSE_TAG = '/';
+    private final static char CH_SPECIAL_CHAR = '&';
+    private final static char CH_SEMICOLON = ';';
     
     public enum TokenType {
         TEXT,
@@ -29,79 +36,20 @@ public class HtmlScanner {
     
     public HtmlScanner(String text)
     {
-        if ( text == null ) {
-            text = "";
-        }
-        
-        this.text = text.trim();
-    }
-    
-    /** @return the size of the input. */
-    public int size()
-    {
-        return this.text.length();
-    }
-    
-    /** @return the number of chars pending in input. */
-    public int countPendingChars()
-    {
-        return this.size() - this.getPos();
-    }
-    
-    /** @return the whole input text. */
-    public String getWholeText()
-    {
-        return this.text;
-    }
-    
-    /** @return the current pos. */
-    public int getPos()
-    {
-        return this.pos;
+        super( text );
     }
     
     /** Skips all spaces, including CR and LF. */
+    @Override
     public void skipSpaces()
     {
+        final String TEXT = this.getInput();
+        
         while( !this.isEod()
-            && Character.isWhitespace( this.text.charAt( pos ) ) )
+            && Character.isWhitespace( TEXT.charAt( this.getPos() ) ) )
         {
-            ++pos;
+            this.skip();
         }
-    }
-    
-     /** Advance the cursor exactly one position. */
-    public void skip()
-    {
-        this.skip( 1 );
-    }
-    
-    /** Move the cursor
-      * @param delta the movement from the current position.
-      */
-    public void skip(int delta)
-    {
-        if ( !this.isEod() ) {
-            this.pos = Math.max( 0, pos + delta );
-        }
-    }
-    
-    /** @return true of we have reached the end of the document, false otherwise. */
-    public boolean isEod()
-    {
-        return this.pos >= this.text.length();
-    }
-    
-    /** @return the current char. */
-    public char getCurrentChar()
-    {
-        char toret = '\0';
-        
-        if ( !this.isEod() ) {
-            toret = this.text.charAt( pos );
-        }
-        
-        return toret;
     }
     
     /** Get the current token type at cursor.
@@ -139,14 +87,16 @@ public class HtmlScanner {
             
             this.skipSpaces();
             toret = this.getTokenType();
-            this.pos = oldPos;
+            this.moveTo( oldPos );
         }
         
         return toret;
     }
     
-    /** @return the name of the tag if there is a tag ahead, null otherwise. */
-    public String getNextTag()
+    /** @return the name of the tag if there is a tag ahead,
+      *         null when there is no tag ahead,
+      */
+    public String getNextTagName()
     {
         String toret = null;
         
@@ -154,7 +104,7 @@ public class HtmlScanner {
             int oldPos = this.getPos();
             
             this.skipSpaces();
-            toret = this.readTag();
+            toret = this.readTagName();
             this.moveTo( oldPos );
         }
         
@@ -166,51 +116,30 @@ public class HtmlScanner {
       */
     public boolean isNextTag(String tagName)
     {
-        String nextTag = this.getNextTag();
+        String nextTag = this.getNextTagName();
         
-        tagName = tagName.trim().toLowerCase();
+        tagName = tagName.trim().toLowerCase( Locale.US );
         return nextTag != null && nextTag.equals( tagName );
-    }
-    
-    /** @return true when the next input matches the given char, false otherwise.
-      * @param ch the char to match in the input.
-      */
-    public boolean match(char ch)
-    {
-        return this.match( Character.toString( ch ) );
-    }
-    
-    /** @return true when the next input matches the given text, false otherwise.
-      * @param text the text to match in the input.
-      */
-    public boolean match(String text)
-    {
-        boolean toret = false;
-        
-        if ( !this.isEod() ) {
-            toret = true;
-            for(char ch: text.toCharArray()) {
-                if ( ch != getCurrentChar() ) {
-                    toret = false;
-                    break;
-                }
-                
-                this.skip();
-            }
-        }
-        
-        return toret;
     }
     
     /** @return the text at current cursor, or blank. */
     public String readText()
+    {
+        return this.readText( CH_OPEN_TAG );
+    }
+    
+    /** @return the text at current cursor, or blank.
+      * @param chLimit the character acting as a limit for text.
+      */
+    public String readText(char chLimit)
     {
         final var TORET = new StringBuilder();
         boolean tagFound = false;
         
         this.skipSpaces();
         while( !this.isEod()
-            && !tagFound )
+            && !tagFound
+            && this.getCurrentChar() != chLimit )
         {
             switch ( this.getTokenType() ) {
                 case TEXT -> {
@@ -233,48 +162,98 @@ public class HtmlScanner {
         return TORET.toString().trim();
     }
     
-    /** @return the tag at cursor, in lower case, or blank. */
-    public String readTag()
+    /** @return the name of the next tag. ONLY the name,
+      *         or null if there is no tag ahead.
+      */
+    public String readTagName()
     {
         final var TORET = new StringBuilder();
+        String tagName = null;
         
         this.skipSpaces();
         if ( this.match( CH_OPEN_TAG ) ) {
             // Read tag label
             if ( !this.isEod() ) {
-                boolean inAttrs = false;
-                TORET.append( this.getCurrentChar() );
-                this.skip();
+                TORET.append( this.readChar() );
 
                 while ( !this.isEod()
-                     && this.getCurrentChar() != CH_CLOSE_TAG )
+                     && this.getCurrentChar() != ' '
+                     && this.getCurrentChar() != CH_CLOSE_TAG 
+                     && this.getCurrentChar() != CH_SELF_CLOSE_TAG )
                 {
-                    final char CH = this.getCurrentChar();
-
-                    this.skip();
-                    
-                    if ( inAttrs ) {
-                        continue;
-                    }
-                    
-                    if ( !inAttrs
-                       && CH == ' ' )
-                    {
-                        inAttrs = true;
-                    }
-                    
-                    TORET.append( CH );
+                    TORET.append( this.readChar() );
                 }
             }
-                
-            // Ensure we are past the closing tag char.
-            if ( !this.match( CH_CLOSE_TAG ) ) {
-                // The input ended before ending the tag
-                TORET.setLength( 0 );
-            }
+            
+            tagName = TORET.toString();
         }
         
-        return TORET.toString().trim().toLowerCase();
+        
+        
+        return tagName;
+    }
+    
+    /** @return the tag info at cursor, in lower case, or blank.
+      *         Info is returned as a Map, with thr following contents:
+      *             - there was an error reading the attrs.
+      *                 LBL_TAG_NAME / name of the tag.
+      *                 LBL_ERROR / error message.
+      *             - average use case
+      *                 LBL_TAG_NAME / name of the tag.
+      *                 [[attr1, value1],
+      *                  [...attrN, valueN]]
+      */
+    public Map<String, String> readTag()
+    {
+        final var TORET = new HashMap<String, String>();
+        final var ATTRS = new StringBuilder();
+        final String tagName = this.readTagName().trim();
+        
+        if ( !tagName.isEmpty() ) {
+            this.skipSpaces();
+            char txtDelim = '\0';
+
+            // Read attributes
+            boolean inStr = false;
+            while ( !this.isEod()
+                 && ( inStr   
+                   || ( this.getCurrentChar() != CH_CLOSE_TAG 
+                     && this.getCurrentChar() != CH_SELF_CLOSE_TAG )))
+            {
+                final char CH = this.getCurrentChar();
+
+                if ( !inStr
+                  && ( CH == '\"'
+                    || CH == '\'' ))
+                {
+                    txtDelim = CH;
+                    inStr = true;
+                }
+                else
+                if ( inStr
+                  && CH == txtDelim )
+                {
+                    txtDelim = '\0';
+                    inStr = false;
+                }
+
+                ATTRS.append( this.readChar() );
+            }
+             
+            // Ensure we are past the closing tag char.
+            this.match( CH_SELF_CLOSE_TAG );
+            if ( !this.match( CH_CLOSE_TAG ) ) {
+                // The input ended before ending the tag
+                TORET.put( LBL_ERROR, "unexpected end" );
+            }
+
+            TORET.putAll( this.readAttributes( ATTRS.toString() ) );
+        }
+        
+        // Add the tag name.
+        TORET.put( LBL_TAG_NAME, tagName.toLowerCase( Locale.US ));
+        
+        return TORET;
     }
     
     /** @return the special char at current cursor pos, or null char. */
@@ -312,16 +291,6 @@ public class HtmlScanner {
         return toret;
     }
     
-    /** Moves the cursor to the given position.
-      * Moves the cursor to 0 if pos is negative.
-      * Moves the cursor to the last position if pos >= size.
-      * @param pos the new position.
-      */
-    public void moveTo(int pos)
-    {
-        this.pos = Math.max( 0, Math.min( pos, this.size() - 1 ) );
-    }
-    
     /** Gets the corresponding char for this special name, or null.
       * for instance, 'euro' -> €.
       * @param token the string containing the name of the special char.
@@ -335,31 +304,107 @@ public class HtmlScanner {
         if ( token.charAt( 0 ) == '#' ) {
             int radix = 10;
             token = token.substring( 1 );
-            char ch = Character.toLowerCase( token.charAt( 0 ) );
+            char ch = String.valueOf( token.charAt( 0 ) )
+                                .toLowerCase( Locale.US ).charAt( 0 );
             
             if ( ch == 'x' ) {
                 radix = 16;
                 token = token.substring( 1 );
             }
             
+            int codePoint = -1;
+            
             try {
-                toret = Character.forDigit(
-                            Integer.parseInt( token.substring( 1 ) ),
-                                                    radix );
+                codePoint = Integer.parseInt( token, radix );
             } catch(NumberFormatException exc) {
                 LOG.warning( String.format(
                                         "does not contain a number: '%s'",
                                         token ));
             }
+            
+            codePoint = Math.max( ' ', codePoint );
+            toret = Character.valueOf( (char) codePoint );
         } else {
             toret = SPECIAL_CHAR_NAMES.get( token );
         }
 
         return toret;
     }
+    
+    /** Checks whether there is a '\'' or a '"' ahead.
+      * The delimiter char is consumed, if existed.
+      * @return The chars '\'' or '"' if one of these were present,
+      *         '\0' otherwise.
+      */
+    private char matchTextDelimiter()
+    {
+        this.skipSpaces();
+        final char CH = this.getCurrentChar();
+        char toret = '\0';
+        
+        if ( CHS_TEXT_DELIMITER.contains(Character.toString(CH ) ) ) {
+            toret = this.readChar();
+        }
+        
+        return toret;
+    }
+    
+    /** Reads the attributes in a string.
+      * @param strAttributes a string with attributes within.
+      * @return a map with pairs tag/value.
+      *         it will contain a pair LBL_ERR, ERR_MSG in case of error.
+      */
+    private Map<String, String> readAttributes(String strAttributes)
+    {
+        final var SCANNER = new HtmlScanner( strAttributes );
+        final var TORET = new HashMap<String, String>();
+        
+        while ( !SCANNER.isEod() ) {
+            SCANNER.skipSpaces();
+            
+            // Read var
+            String attrName = "";
+            String attrValue = null;
+            
+            while ( !SCANNER.isEod()
+                 && SCANNER.getCurrentChar() != '='
+                 && !Character.isSpaceChar( SCANNER.getCurrentChar() ) )
+            {
+                attrName += SCANNER.readChar();
+            }
+            
+            if ( attrName.isBlank() ) {
+                TORET.put( LBL_ERROR, "empty attr name in attributes" );
+                break;
+            }
+            
+            // Skip '='
+            SCANNER.skipSpaces();
+            if ( SCANNER.match( "=" ) ) {
+                SCANNER.skipSpaces();
+                
+                // Skip '"'
+                char textDelimiter = SCANNER.matchTextDelimiter();
+                if ( textDelimiter == '\0' ) {
+                    TORET.put( LBL_ERROR, "missing opening '\"' in attribute's value" );
+                    break;
+                }
 
-    private int pos;
-    private final String text;
+                attrValue = SCANNER.readText( textDelimiter );
+            
+                // Skip '"'
+                if ( !SCANNER.match( textDelimiter )) {
+                    TORET.put( LBL_ERROR, "expecting closing '\"' for attribute's value" );
+                    break;
+                }
+            }
+            
+            TORET.put( attrName.trim().toLowerCase(), attrValue );
+        }
+        
+        return TORET;
+    }
+
     private final static Map<String, Character> SPECIAL_CHAR_NAMES =
                                     Map.ofEntries(
                                         Map.entry( "Tab", '\u0009' ),
