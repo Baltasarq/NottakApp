@@ -9,6 +9,6 @@ This is a Java desktop application.
 Just use Maven.
 
     $ mvn package
-    $ java -jar target/NottakApp-1.0.jar
+    $ java -jar target/nottakapp-1.0-with-dependencies.jar
 
 
