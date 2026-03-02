@@ -77,7 +77,7 @@ public class MainWindow {
         this.getView().setVisible( false );
         this.getView().dispose();
                 
-        this.notebook.saveAll( this.config.get( Config.Key.DATA_DIR_PATH ) );
+        this.notebook.saveAll();
         LOG.info( String.format( "View hidden: %s", AppInfo.TITLE ));
     }
     
@@ -187,10 +187,8 @@ public class MainWindow {
     public void updateEditor(NoteProxy noteProxy)
     {
         if ( noteProxy != null ) {
-            final Note NOTE = noteProxy.getNote();
-        
-            this.editor.setNote( NOTE );
-            LOG.info( "note shown in editor: " + NOTE.getId().toString() );
+            this.editor.setNote( noteProxy );
+            LOG.info( "note shown in editor: " + noteProxy.getId().toString() );
         }
     }
     
