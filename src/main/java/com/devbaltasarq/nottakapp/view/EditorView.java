@@ -4,6 +4,7 @@
 package com.devbaltasarq.nottakapp.view;
 
 
+import com.devbaltasarq.nottakapp.core.Date;
 import java.awt.Font;
 import java.awt.BorderLayout;
 import java.awt.event.FocusListener;
@@ -14,7 +15,11 @@ import javax.swing.JTextField;
 import javax.swing.text.html.HTMLEditorKit;
 
 import com.devbaltasarq.nottakapp.core.TagSet;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
 import javax.swing.JScrollPane;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 
 /** The view for the editor.
@@ -25,8 +30,10 @@ public class EditorView extends JPanel {
 
     public EditorView(Font font)
     {
-        final BorderLayout BLAY = new BorderLayout();
-        
+        final var BLAY = new BorderLayout();
+        final var FOOTER_PANE = new JPanel();
+        final var SLAY = new BoxLayout( FOOTER_PANE, BoxLayout.Y_AXIS );
+
         BLAY.setHgap( 5 );
         BLAY.setVgap( 5 );
         
@@ -35,10 +42,17 @@ public class EditorView extends JPanel {
             this.font = new Font( Font.SANS_SERIF, Font.PLAIN, 16 );
         }
         
+        // Create the footer
+        FOOTER_PANE.setLayout( SLAY );
+        FOOTER_PANE.add( this.buildDatesEditor() );
+        FOOTER_PANE.add( this.buildTagsEditor() );
+        
         this.setLayout( BLAY );
         this.add( this.buildEditor(), BorderLayout.CENTER );
         this.add( this.buildTitleEditor(), BorderLayout.PAGE_START );
-        this.add( this.buildTagsEditor(), BorderLayout.PAGE_END );
+        this.add( FOOTER_PANE, BorderLayout.PAGE_END );
+        this.docListener = null;
+        this.focusListener = null;
     }
     
     private JScrollPane buildEditor()
@@ -66,6 +80,18 @@ public class EditorView extends JPanel {
         this.titlePanel.setLayout( LAY );
         this.titlePanel.add( this.edTitle, BorderLayout.CENTER );
         return this.titlePanel;
+    }
+    
+    private JTitlePanel buildDatesEditor()
+    {
+        final var LAY = new BorderLayout();
+        this.lblDates = new JLabel();
+        this.lblDates.setFont( this.font );
+        
+        this.datesPanel = new JTitlePanel( "Dates" );
+        this.datesPanel.setLayout( LAY );
+        this.datesPanel.add( this.lblDates, BorderLayout.CENTER );
+        return this.datesPanel;
     }
     
     private JTitlePanel buildTagsEditor()
@@ -111,7 +137,7 @@ public class EditorView extends JPanel {
     {
         final var TORET = new TagSet();
         
-        TORET.addAllFromString( this.edTags.getText() );
+        TORET.addAllFrom( this.edTags.getText() );
         return TORET;
     }
     
@@ -122,6 +148,18 @@ public class EditorView extends JPanel {
     public void setTags(TagSet ts)
     {
         this.edTags.setText( ts.toString() );
+    }
+    
+    /** Sets the dates information in the editor.
+      * @param creationDate the creation date of the note.
+      * @param modificationDate the modification date of the note.
+      */
+    public void setDates(Date creationDate, Date modificationDate)
+    {
+        this.lblDates.setText(
+                        String.format( "crea: %s, mod: %s",
+                                    creationDate.toLongDateString(),
+                                    modificationDate.toLongDateString() ));
     }
     
     /** Hide nearly everything, show only the minimum. */
@@ -151,7 +189,15 @@ public class EditorView extends JPanel {
       */
     public void onFocusLost(Runnable action)
     {
-        final var ON_FOCUS_LOST = new FocusListener() {
+        // Remove the previous listener
+        if ( this.focusListener != null ) {
+            this.edTitle.removeFocusListener( this.focusListener );
+            this.edTags.removeFocusListener( this.focusListener );
+            this.getEditor().removeFocusListener( this.focusListener );
+        }
+        
+        // Add the new listener
+        this.focusListener = new FocusListener() {
             @Override
             public void focusGained(FocusEvent evt)
             {   
@@ -163,15 +209,57 @@ public class EditorView extends JPanel {
             }
         };
         
-        this.edTitle.addFocusListener( ON_FOCUS_LOST );
-        this.edTags.addFocusListener( ON_FOCUS_LOST );
-        this.editor.addFocusListener( ON_FOCUS_LOST );
+        this.edTitle.addFocusListener( this.focusListener );
+        this.edTags.addFocusListener( this.focusListener );
+        this.getEditor().addFocusListener( this.focusListener );
+    }
+    
+    public void onContentsChanged(Runnable action)
+    {
+        final var EDITOR_DOC = this.getEditor().getDocument();
+        final var TITLE_DOC = this.edTitle.getDocument();
+        final var TAGS_DOC = this.edTags.getDocument();
+        
+        // Remove the previous listener
+        if ( this.docListener != null ) {
+            TAGS_DOC.removeDocumentListener( this.docListener );
+            TITLE_DOC.removeDocumentListener( this.docListener );
+            EDITOR_DOC.removeDocumentListener( this.docListener );
+        }
+        
+        // Add the new listener
+        this.docListener = new DocumentListener () {
+            @Override
+            public void insertUpdate(DocumentEvent e)
+            {
+                action.run();
+            }
+            @Override
+            public void removeUpdate(DocumentEvent e)
+            {    
+                action.run();
+            }
+            @Override
+            public void changedUpdate(DocumentEvent e)
+            {
+                action.run();
+            }
+        };
+        
+        
+        EDITOR_DOC.addDocumentListener( this.docListener );
+        TAGS_DOC.addDocumentListener( this.docListener );
+        TITLE_DOC.addDocumentListener( this.docListener );
     }
     
     private JTitlePanel titlePanel;
     private JTitlePanel tagsPanel;
+    private JTitlePanel datesPanel;
+    private JLabel lblDates;
     private JTextField edTitle;
     private JTextField edTags;
     private JEditorPane editor;
+    private DocumentListener docListener;
+    private FocusListener focusListener;
     private Font font;
 }

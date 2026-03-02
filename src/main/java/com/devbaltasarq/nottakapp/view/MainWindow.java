@@ -88,13 +88,13 @@ public class MainWindow {
             this.working = true;
             
             final Note NOTE = new Note( "New note" );
-            final NoteProxy PROXY = NoteProxy.fromNote( NOTE );
+            final NoteProxy PROXY = NoteProxy.fromNote( this.notebook, NOTE );
 
             this.notebook.add( PROXY );
             this.notesTree.add( PROXY );
             LOG.info(
                     String.format(
-                            "New note created: '%s'", NOTE.getIdAsString() ));
+                        "New note created: '%s'", NOTE.getId().toString() ));
             this.selectedTreeNode( PROXY );
             this.working = false;
         }
@@ -190,7 +190,7 @@ public class MainWindow {
             final Note NOTE = noteProxy.getNote();
         
             this.editor.setNote( NOTE );
-            LOG.info( "note shown in editor: " + NOTE.getIdAsString() );
+            LOG.info( "note shown in editor: " + NOTE.getId().toString() );
         }
     }
     

@@ -23,6 +23,7 @@ public class TagSet {
     public TagSet()
     {
         this.tags = new HashSet();
+        this.dirty = false;
     }
     
     /** Adds a new tag, unless it is already in the set.
@@ -31,12 +32,23 @@ public class TagSet {
     public void add(Tag tag)
     {
         this.tags.add( tag );
+        this.dirty = true;
+    }
+    
+    /** Adds all tags from another TagSet.
+      * @param TAGS the other TagSet to add tags from.
+      */
+    public void addAllFrom(final TagSet TAGS)
+    {
+        for (final Tag TAG: TAGS.getAll()) {
+            this.add( TAG );
+        }
     }
     
     /** Adds all tags present in the string.
-      * @param strTags a comma-separated string with tags.
+      * @param strTags a comma-separated string with tags to be parsed.
       */
-    public void addAllFromString(String strTags)
+    public void addAllFrom(String strTags)
     {
         String[] strTagList = strTags.trim().split( DELIMITER );
         
@@ -75,6 +87,20 @@ public class TagSet {
     public void clear()
     {
         this.tags.clear();
+        this.dirty = true;
+    }
+    
+    /** @return whether it has changed or not. */
+    public boolean isDirty()
+    {
+        return this.dirty;
+    }
+    
+    /** Resets the dirty mark.
+      * @see TagSet::isDirty. */
+    public void resetDirty()
+    {
+        this.dirty = false;
     }
     
     /** @return the number of tags. */
@@ -83,7 +109,9 @@ public class TagSet {
         return this.tags.size();
     }
     
-    /** @return true if the given tag is already in the set, false otherwise. */
+    /** @return true if the given tag is already in the set, false otherwise.
+      * @param t a given tag to check whether it is contained or not.
+       */
     public boolean contains(Tag t)
     {
         return this.tags.contains( t );
@@ -97,5 +125,6 @@ public class TagSet {
                                             .map( (t) -> t.get() ).toList() );
     }
     
+    private boolean dirty;
     private final Set<Tag> tags;
 }

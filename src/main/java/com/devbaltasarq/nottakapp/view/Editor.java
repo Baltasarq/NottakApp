@@ -10,11 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JCheckBox;
 import javax.swing.JEditorPane;
-import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.View;
 import javax.swing.text.html.FormView;
-import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
@@ -25,7 +23,6 @@ import com.devbaltasarq.nottakapp.core.converter.ParseException;
 import com.devbaltasarq.nottakapp.core.converter.Element;
 import com.devbaltasarq.nottakapp.core.converter.elements.Chk;
 import com.devbaltasarq.nottakapp.core.converter.elements.Root;
-import java.util.List;
 
 
 /** The text editor.
@@ -40,9 +37,11 @@ public class Editor {
     public Editor(EditorView view)
     {
         this.note = null;
+        this.dirty = false;
         this.editorView = view;
         this.loadTextFromNote();
         this.editorView.onFocusLost( () -> this.saveTextToNote() );
+        this.editorView.onContentsChanged( () -> this.onContentsChanged() );
     }
     
     /** @return the view of the editor. */
@@ -55,6 +54,12 @@ public class Editor {
     public JEditorPane getEditor()
     {
         return this.getView().getEditor();
+    }
+    
+    /** @return whether the note has been modified or not. */
+    public boolean isDirty()
+    {
+        return this.dirty;
     }
     
     /** Replaces the contents of the editor with the given HTML.
@@ -81,18 +86,6 @@ public class Editor {
         }
     }
     
-    private void loadTextFromNote()
-    {
-        if ( this.note != null ) {
-            this.getView().setNoteStatus();
-            this.getView().setTitle( this.note.getTitle() );
-            this.getView().setTags( this.note.getTags() );
-            this.replaceHtmlWith( htmlFromMD( this.getNote().get() ) );
-        } else {
-            this.getView().setNoNoteStatus();
-        }
-    }
-    
     private static String htmlFromMD(String text)
     {
         String toret = "";
@@ -106,6 +99,41 @@ public class Editor {
         }
         
         return toret;
+    }
+    
+    private void loadTextFromNote()
+    {
+        if ( this.note != null ) {
+            this.getView().setNoteStatus();
+            this.getView().setTitle( this.note.getTitle() );
+            this.getView().setTags( this.note.getTags() );
+            this.getView().setDates(
+                                this.note.getCreationDate(),
+                                this.note.getModificationDate() );
+            this.replaceHtmlWith( htmlFromMD( this.getNote().get() ) );
+            this.dirty = false;
+        } else {
+            this.getView().setNoNoteStatus();
+        }
+    }
+    
+    public void saveTextToNote()
+    {
+        if ( this.note != null ) {
+            if ( this.isDirty() ) {
+                final Map<Integer, Boolean> CHK_VALUES =
+                        CheckBoxValuesExtraction
+                                .extractCheckboxStates( this.getEditor() );
+                final String CONTENTS = this.getEditor().getText();
+
+                this.note.replaceTitle( this.getView().getTitle() );
+                this.note.getTags().replaceWith( this.getView().getTags() );
+                this.note.replace( mdFromHtml( CONTENTS, CHK_VALUES ) );
+                this.dirty = false;
+            }
+        } else {
+            this.loadTextFromNote();
+        }
     }
     
     private static String mdFromHtml(
@@ -134,21 +162,6 @@ public class Editor {
         return toret;
     }
     
-    public void saveTextToNote()
-    {
-        if ( this.note != null ) {
-            final Map<Integer, Boolean> CHK_VALUES =
-                    CheckBoxValuesExtraction.extractCheckboxStates( this.getEditor() );
-            final String CONTENTS = this.getEditor().getText();
-
-            this.note.replaceTitle( this.getView().getTitle() );
-            this.note.getTags().replaceWith( this.getView().getTags() );
-            this.note.replace( mdFromHtml( CONTENTS, CHK_VALUES ) );
-        } else {
-            this.loadTextFromNote();
-        }
-    }
-    
     /** Change the text in the editor.
       * @param note the note to show in the editor.
       */
@@ -165,7 +178,14 @@ public class Editor {
         return this.note;
     }
     
+    /** Called when the note has been changed. */
+    private void onContentsChanged()
+    {
+        this.dirty = true;
+    }
+    
     private Note note;
+    private boolean dirty;
     private final EditorView editorView;
     
     private static class CheckBoxValuesExtraction {
