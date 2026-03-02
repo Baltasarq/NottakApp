@@ -24,7 +24,8 @@ public record NoteDto(
     private static final String NOTE_TEXT_FORMAT =
                                         "# %s"                  // Title
                                         + "\n%s"                // Tags
-                                        + "\ncre: %s, mod: %s"  // Dates
+                                        + "\n%s"                // Date created
+                                        + "\n%s"                // Date edited
                                         + "\n%s";               // Text
         
     public NoteDto()
@@ -198,10 +199,10 @@ public record NoteDto(
                 second = nd1;
             }
             
-            text = "**<<<<<<< " + first.dateModification().toString()
+            text = "**======= " + first.dateModification().toString()
                     + "**\n\n"
                     + first.text()
-                    + "**>>>>>>> " + second.dateModification().toString()
+                    + "\n\n**======= " + second.dateModification().toString()
                     + "**\n\n"
                     + second.text();
         }
