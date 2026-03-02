@@ -94,9 +94,10 @@ public class DOMRunner {
       */
     protected boolean textResultEndsWith(final String POSTFIX)
     {
-        return this.textResult
+        return ( POSTFIX.length() <= this.textResult.length()
+                && this.textResult
                     .substring( this.textResult.length() - POSTFIX.length() )
-                        .equals( POSTFIX );
+                        .equals( POSTFIX ) );
     }
     
     /** @return the root element of the DOM. */

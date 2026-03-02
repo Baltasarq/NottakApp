@@ -3,6 +3,7 @@
 
 package com.devbaltasarq.nottakapp.core.converter;
 
+
 import com.devbaltasarq.nottakapp.core.converter.elements.Chk;
 import com.devbaltasarq.nottakapp.core.converter.elements.Entry;
 import com.devbaltasarq.nottakapp.core.converter.elements.Root;
@@ -12,6 +13,8 @@ import com.devbaltasarq.nottakapp.core.converter.html.HtmlParser;
 import com.devbaltasarq.nottakapp.core.converter.markdown.MDParser;
 import com.devbaltasarq.nottakapp.core.converter.runners.HtmlRunner;
 import com.devbaltasarq.nottakapp.core.converter.runners.MarkDownRunner;
+import java.util.ArrayList;
+import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -101,5 +104,59 @@ public class TestRealCases {
         MD_RES_RUNNER.run();
         final var MD_RES_RUNNER_TEXT = MD_RES_RUNNER.toString();
         assertEquals(  TEXT + "\n", MD_RES_RUNNER_TEXT );
+    }
+    
+    @Test
+    public void testMultipleParasRealCase()
+    {
+        final String[] LINES = new String[] {
+            "This is taking shape!! A **very** __good__ one!",
+            "And I like it, very much :-D",
+            "...though there's still a ton to do." };
+        final var TEXT = new StringBuilder();
+        
+        // Build text
+        for (String line: LINES) {
+            TEXT.append( line );
+            TEXT.append( "\n" );
+        }
+        
+        final var MD_PARSER = new MDParser( TEXT.toString() );
+        
+        try {
+            MD_PARSER.parse();
+        } catch(ParseException exc) {
+            fail( exc.getMessage() );
+        }
+        
+        final Root MD_ROOT = MD_PARSER.getRoot();
+        final var HTML_RUNNER = new HtmlRunner( MD_ROOT );
+        
+        HTML_RUNNER.run();
+        final String HTML_TEXT = HTML_RUNNER.getResultText();
+        
+        final var HTML_PARSER = new HtmlParser( HTML_TEXT );
+        
+        try {
+            HTML_PARSER.parse();
+        } catch(ParseException exc) {
+            fail( exc.getMessage() );
+        }
+        
+        final Root HTML_ROOT = HTML_PARSER.getRoot();
+        final var MD_RUNNER = new MarkDownRunner( HTML_ROOT );
+        
+        MD_RUNNER.run();
+        
+        final var MD_RESULT_LINES = new ArrayList<String>(
+                                        Arrays.asList(
+                                                    MD_RUNNER.getResultText()
+                                                            .trim()
+                                                            .split( "\n" ) ) );
+        
+        assertEquals( LINES.length, MD_RESULT_LINES.size() );
+        for(int n = 0; n < LINES.length; ++n)  {
+            assertEquals( LINES[ n ], MD_RESULT_LINES.get( n ).trim() );
+        }
     }
 }

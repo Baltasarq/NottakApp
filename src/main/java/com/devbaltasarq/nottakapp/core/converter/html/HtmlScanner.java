@@ -188,8 +188,6 @@ public class HtmlScanner extends Scanner {
             tagName = TORET.toString();
         }
         
-        
-        
         return tagName;
     }
     
@@ -207,9 +205,11 @@ public class HtmlScanner extends Scanner {
     {
         final var TORET = new HashMap<String, String>();
         final var ATTRS = new StringBuilder();
-        final String tagName = this.readTagName().trim();
+        final String tagName = this.readTagName();
         
-        if ( !tagName.isEmpty() ) {
+        if ( tagName != null
+          && !tagName.isBlank() )
+        {
             this.skipSpaces();
             char txtDelim = '\0';
 
@@ -248,10 +248,10 @@ public class HtmlScanner extends Scanner {
             }
 
             TORET.putAll( this.readAttributes( ATTRS.toString() ) );
+            
+            // Add the tag name.
+            TORET.put( LBL_TAG_NAME, tagName.toLowerCase( Locale.US ));
         }
-        
-        // Add the tag name.
-        TORET.put( LBL_TAG_NAME, tagName.toLowerCase( Locale.US ));
         
         return TORET;
     }

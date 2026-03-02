@@ -4,7 +4,6 @@
 package com.devbaltasarq.nottakapp.core.converter;
 
 
-import com.devbaltasarq.nottakapp.core.converter.elements.Chk;
 import com.devbaltasarq.nottakapp.core.converter.runners.HtmlRunner;
 import com.devbaltasarq.nottakapp.core.converter.elements.Root;
 import com.devbaltasarq.nottakapp.core.converter.html.HtmlParser;

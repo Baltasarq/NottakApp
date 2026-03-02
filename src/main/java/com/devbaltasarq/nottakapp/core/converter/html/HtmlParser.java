@@ -72,6 +72,7 @@ public class HtmlParser extends Parser {
             final var CONTENTS = new StringBuilder();
             
             if ( !isTagNotCloseable( TAG_NAME ) ) {
+                // Read the contents
                 final String CLOSING_TAG = "/" + TAG_NAME;
 
                 while ( !SCANNER.isEod() ) {
@@ -86,6 +87,7 @@ public class HtmlParser extends Parser {
                     CONTENTS.append( SCANNER.readChar() );
                 }
 
+                // Read the closing tag
                 SCANNER.readTag();
             }
 

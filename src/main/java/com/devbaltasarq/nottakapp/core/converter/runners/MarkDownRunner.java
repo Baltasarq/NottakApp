@@ -183,8 +183,10 @@ public class MarkDownRunner extends DOMRunner {
     /** Eliminates trailing spaces and appends a single CR. */
     protected void appendCR()
     {
-        this.rtrimTextResult();
-        this.addToTextResult( '\n' );
+        if ( !this.textResultEndsWith( "\n" ) ) {
+            this.rtrimTextResult();
+            this.addToTextResult( '\n' );
+        }
     }
 
     private boolean inUl;

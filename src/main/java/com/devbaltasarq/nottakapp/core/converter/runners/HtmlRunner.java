@@ -149,8 +149,8 @@ public class HtmlRunner extends DOMRunner {
     private void doParOpening(final Par PAR)
     {
         if ( !this.textResultEndsWith( "<p>" )
-          && !this.textResultEndsWith( "<p/>" )
-          && !this.textResultEndsWith( "</p>" ) )
+       /*   && !this.textResultEndsWith( "<p/>" )
+          && !this.textResultEndsWith( "</p>" ) */)
         {
             this.addToTextResult( "<p>" );    
         }
@@ -158,7 +158,9 @@ public class HtmlRunner extends DOMRunner {
     
     private void doParClosing()
     {
-        this.addToTextResult( "</p>" );
+        if ( !this.textResultEndsWith( "</p>" ) ) {
+            this.addToTextResult( "</p>" );
+        }
     }
     
     /** This must be executed when the tags is closing.
