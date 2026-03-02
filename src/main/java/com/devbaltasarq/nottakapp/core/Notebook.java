@@ -92,19 +92,20 @@ public final class Notebook {
     public static Notebook restoreFrom(String path)
     {
         final var TORET = new Notebook( path );
-        final FileFilter FF = (file) -> file.getName().endsWith( Note.FILE_EXT );
         final File DIR = new File( path );
+        final FileFilter FF = 
+                    (file) -> file.getName().endsWith( NoteProxy.FILE_EXT );
         
-        // Get the actual directory, if needed
-        if ( !DIR.isDirectory() ) {
-            LOG.severe( "Notebook.restoreFrom(): notes path is not a directory" );
-        } else {
-            for (final File fileEntry : DIR.listFiles( FF )) {
-                try {
-                    TORET.add( NoteProxy.load( fileEntry.getCanonicalPath() ) );
-                } catch(IOException exc) {
-                    LOG.warning( "error loading: " + fileEntry );
-                }
+        // Chk the actual directory
+        assert DIR.isDirectory(): "Notebook.restoreFrom(): notes path is not a directory";
+        
+        for (final File fileEntry : DIR.listFiles( FF )) {
+            try {
+                TORET.add( NoteProxy.semiLoad(
+                                            TORET,
+                                            fileEntry.getCanonicalPath()) );
+            } catch(IOException exc) {
+                LOG.warning( "error loading: " + fileEntry );
             }
         }
         
@@ -118,7 +119,7 @@ public final class Notebook {
       */
     public static void moveTo(String newPath, Notebook notebook) throws IOException
     {
-        final String FILE_FILTER = "*{" + Note.FILE_EXT + "}";
+        final String FILE_FILTER = "*{" + NoteProxy.FILE_EXT + "}";
         final Path OLD_PATH = Path.of( notebook.getPath() );
         
         if ( !OLD_PATH.toString().equals( newPath ) ) {
