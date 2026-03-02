@@ -162,11 +162,15 @@ public class Note {
     
     /** Writes the note to a stream.
       * @param OUT the stream to write the note to.
+      * @param ignoreDirty ignore the dirty mark and save the note.
       * @throws IOException if writing goes wrong.
       */
-    public void save(final OutputStream OUT) throws IOException
+    public void save(final OutputStream OUT, boolean ignoreDirty) 
+            throws IOException
     {
-        if ( this.isDirty() ) {
+        boolean needsSaving = ( this.isDirty() || ignoreDirty );
+        
+        if ( needsSaving ) {
             this.dateModification = Date.fromSystem();
             NoteDto.from( this ).save( OUT );
             this.resetDirty();

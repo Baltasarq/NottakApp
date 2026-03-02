@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 public final class NoteProxy {
     private static final Logger LOG = Logger.getLogger( NoteProxy.class.getName() );
     public static final String FILE_EXT = ".md";
+    public static final boolean MANDATORY_SAVE = true;
     
     private NoteProxy(
                 Notebook notebook,
@@ -152,30 +153,76 @@ public final class NoteProxy {
 
         return new File( this.notebook.getPath(), toret ).getAbsolutePath();
     }
-
     
-    /** Saves the note, provided the note has been loaded.
-      *  Otherwise, it is ignored.
+    /** Saves the note,  provided the note has been loaded and it is dirty.
+      * Otherwise, it is ignored.
+      * @return true if the note needs updating, false otherwise.
+      * @throws IOException if writing goes wrong.
+      */
+    public boolean save() throws IOException
+    {
+        return this.save( this.notebook.getPath() );
+    }
+    
+    /** Saves the note, provided the note has been loaded and it is dirty.
+      * Otherwise, it is ignored.
+      * @return true if the note needs updating, false otherwise.
       * @param pathToNotesDir the path for notes.
       * @throws IOException if writing goes wrong.
      */
-    public void save(String pathToNotesDir) throws IOException
+    public boolean save(String pathToNotesDir) throws IOException
     {
+        return this.save( pathToNotesDir, false );
+    }
+    
+    /** Saves the note, provided the note has been loaded nd it is dirty.
+      * Otherwise, it is ignored.
+      * @return true if the note needs updating, false otherwise.
+      * @param pathToNotesDir the path for notes.
+      * @param ignoreDirty ignore the dirty mark and save anyway.
+      * @throws IOException if writing goes wrong.
+     */
+    public boolean save(String pathToNotesDir, boolean ignoreDirty) throws IOException
+    {
+        boolean toret = false;
+        boolean needsSave = ( this.note.isDirty() || ignoreDirty );
+        
         if ( this.note != null ) {
             final String PATH = this.buildPath();
+            long currentFileChangedTime = new File( PATH ).lastModified();
             
-            try (final var FILE_OUT = new FileOutputStream( PATH )) {
-                this.note.save( FILE_OUT );
-            } catch(IOException exc) {
-                String errorMsg = "unable to save note: "
-                                        + this.getId()
-                                        + "\n" + exc.getMessage();
-                LOG.severe( errorMsg );
-                throw new IOException( errorMsg );
-            } finally {
-                this.fileChangedTime = new File( PATH ).lastModified();
+            // Chk file on disk
+            if ( this.fileChangedTime < currentFileChangedTime ) {
+                // The note has changed on disk
+                try (final var FILE_IN = new FileInputStream( PATH ) ) {
+                    final var DISK_NOTE =
+                                NoteDto.retrieveFrom( this.getId(), FILE_IN );
+                    final var THIS_NOTE = NoteDto.from( this.getNote() );
+                    final var NEW_NOTE = NoteDto.merge( THIS_NOTE, DISK_NOTE );
+                    this.note = NEW_NOTE.toNote();
+                    toret = true;
+                } catch(IOException | IllegalArgumentException exc) {
+                    // The note on disk was changed but it is corrupted.
+                    LOG.warning( "note on disk more updated but corrupted" );
+                }
+            }
+            
+            // Normal save
+            if ( needsSave ) {
+                try (final var FILE_OUT = new FileOutputStream( PATH )) {
+                    this.note.save( FILE_OUT, needsSave );
+                    this.fileChangedTime = new File( PATH ).lastModified();
+                } catch(IOException exc) {
+                    String errorMsg = "unable to save note: "
+                                            + this.getId()
+                                            + "\n" + exc.getMessage();
+                    LOG.severe( errorMsg );
+                    throw new IOException( errorMsg );
+                }
             }
         }
+        
+        return toret;
     }
     
     /** Delete the note. */

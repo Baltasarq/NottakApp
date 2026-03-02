@@ -74,6 +74,12 @@ public final class Notebook {
         return this.path;
     }
     
+    /** Saves all the notes in the notebook. */
+    public void saveAll()
+    {
+        this.saveAll( this.getPath() );
+    }
+    
     /** Saves all the notes in the notebook.
       * @param pathToNotesDir the directory in which to save notes.
       */
@@ -124,7 +130,7 @@ public final class Notebook {
         
         if ( !OLD_PATH.toString().equals( newPath ) ) {
             for(NoteProxy proxy: notebook.notesIndexed.values()) {
-                proxy.save( OLD_PATH.toString() );
+                proxy.save( OLD_PATH.toString(), NoteProxy.MANDATORY_SAVE );
             }
             
             Files.createDirectories( Path.of( newPath ) );
