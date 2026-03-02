@@ -5,6 +5,7 @@ package com.devbaltasarq.nottakapp.core;
 
 
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -28,7 +29,7 @@ public class Id {
         this.id = uuid;
     }
     
-    /** @return the uuid inside this id. */
+    /** @return the UUID inside this id. */
     public UUID get()
     {
         return this.id;
@@ -37,9 +38,11 @@ public class Id {
     @Override
     public String toString()
     {
-        return this.id.toString().replaceAll( "-", "" ).trim();
+        return this.id.toString()
+                    .toLowerCase( Locale.US )
+                    .replaceAll( "-", "" ).trim();
     }
-    
+        
     public static Id from(String strUUID)
     {
         strUUID = strUUID.trim();

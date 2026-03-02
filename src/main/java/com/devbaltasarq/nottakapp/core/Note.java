@@ -4,21 +4,16 @@
 package com.devbaltasarq.nottakapp.core;
 
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.Locale;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 
 /** Represents a simple note.
   * @author baltasarq
   */
 public class Note {
-    public static final String FILE_EXT = ".md";
-    
-    /** Creates an empty note.
+    /** Creates an empty note with a title.
       * @param title the title for the note.
       */
     public Note(String title)
@@ -32,19 +27,37 @@ public class Note {
       */
     public Note(String title, String initialText)
     {
-        this( new Id(), title, null, initialText );
+        this( new Id(),
+                Date.fromSystem(),
+                Date.fromSystem(),
+                title,
+                null,
+                initialText );
     }
     
     /** Creates a note with all its components.
       * @param id the id of the note.
+      * @param fileChangedTime the last time it was modified on storage.
+      * @param creation the creation date of the note.
+      * @param modification the modification date of the note.
       * @param title the title of the note.
+      * @param tags the tags associated with the note.
       * @param text the whole text for the note.
       */
-    Note(Id id, String title, TagSet tags, String text)
+    Note(
+            Id id,
+            Date creation,
+            Date modification,
+            String title,
+            TagSet tags,
+            String text)
     {
         this.id = id;
+        this.dirty = false;
         this.title = title;
         this.text = text;
+        this.dateCreation = creation;
+        this.dateModification = modification;
         
         if ( tags == null ) {
             this.tags = new TagSet();
@@ -52,29 +65,29 @@ public class Note {
             this.tags = tags;
         }
     }
-    
+        
     /** @return the id of this note. */
     public Id getId()
     {
         return this.id;
     }
     
-    /** @return the id as an string. */
-    public String getIdAsString()
-    {
-        return this.id.toString().replaceAll( "-", "" );
-    }
-    
-    /** @return the file name for this note. */
-    public String getFileName()
-    {
-        return this.getIdAsString() + FILE_EXT;
-    }
-       
     /** @return the title of this note. */
     public String getTitle()
     {
         return this.title;
+    }
+        
+    /** @return the creation date. */
+    public Date getCreationDate()
+    {
+        return this.dateCreation;
+    }
+    
+    /** @return the modification date. */
+    public Date getModificationDate()
+    {
+        return this.dateModification;
     }
     
     /** Changes the title of this note.
@@ -83,6 +96,7 @@ public class Note {
     public void replaceTitle(String newTitle)
     {
         this.title = newTitle;
+        this.dirty = true;
     }
     
     /** @return the contents of the note. */
@@ -97,6 +111,7 @@ public class Note {
     public void replace(String newText)
     {
         this.text = newText;
+        this.dirty = true;
     }
     
     /** Appends text to the note.
@@ -105,35 +120,7 @@ public class Note {
     public void append(String newText)
     {
         this.text += newText;
-    }
-    
-    /** @return the name of the file.
-      * @param notesDir the directory for the notes.
-      */
-    public String buildFileName(String notesDir)
-    {
-        String toret =  this.getId().toString().toLowerCase( Locale.US );
-        
-        toret += FILE_EXT;
-        return new File( notesDir, toret ).getAbsolutePath();
-    }
-    
-    /** Saves the note to secondary memory
-      * @param path the path to the notes dir.
-      * @throws IOException if saving goes wrong.
-      */
-    public void save(String path) throws IOException
-    {
-        String noteText =
-                "# " + this.getTitle()
-                + "\n" + this.getTags().toString()
-                + "\n" + this.get();
-        
-        Files.writeString( Path.of( this.buildFileName( path ) ),
-                            noteText,
-                            StandardOpenOption.CREATE,
-                            StandardOpenOption.TRUNCATE_EXISTING,
-                            StandardOpenOption.WRITE );
+        this.dirty = true;
     }
         
     @Override
@@ -160,21 +147,58 @@ public class Note {
         return this.tags;
     }
     
+    /** @return true if it needs saving, false otherwise. */
+    public boolean isDirty()
+    {
+        return ( this.dirty || this.tags.isDirty() );
+    }
+    
+    /** Resets the dirty mark, signaling all changed have been saved. */
+    public void resetDirty()
+    {
+        this.dirty = false;
+        this.tags.resetDirty();
+    }
+    
+    /** Writes the note to a stream.
+      * @param OUT the stream to write the note to.
+      * @throws IOException if writing goes wrong.
+      */
+    public void save(final OutputStream OUT) throws IOException
+    {
+        if ( this.isDirty() ) {
+            this.dateModification = Date.fromSystem();
+            NoteDto.from( this ).save( OUT );
+            this.resetDirty();
+        }
+    }
+    
+    /** @return the title of the note. */
     @Override
     public String toString()
     {
         return this.getTitle();
     }
     
-    // This does not belong here.
-    // Missing the path.
-    public static String createPathFor(Note note)
+    /** Retrieves a note from an InputStream.
+      * @param ID the id, previously extracted from the path of the note.
+      * @param INPUT the InputStream to read from.
+      * @return a new note, with the data retrieved.
+      * @throws IllegalArgumentException if parsing dates goes wrong.
+      */
+    public static Note retrieveFrom(
+                            final Id ID,
+                            final InputStream INPUT)
+            throws IllegalArgumentException
     {
-        return note.getFileName();
+        return NoteDto.retrieveFrom( ID, INPUT ).toNote();
     }
     
     private final Id id;
-    private final TagSet tags;
     private String title;
+    private final TagSet tags;
+    private final Date dateCreation;
+    private Date dateModification;
     private String text;
+    private boolean dirty;
 }

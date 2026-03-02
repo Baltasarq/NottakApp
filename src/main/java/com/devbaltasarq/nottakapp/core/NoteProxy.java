@@ -4,6 +4,7 @@
 package com.devbaltasarq.nottakapp.core;
 
 
+import java.io.File;
 import java.util.Scanner;
 import java.util.NoSuchElementException;
 import java.util.logging.Logger;
@@ -13,6 +14,7 @@ import java.nio.file.Files;
 import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 
 
 /** A proxy for any note.
@@ -22,42 +24,50 @@ import java.io.FileNotFoundException;
   */
 public final class NoteProxy {
     private static final Logger LOG = Logger.getLogger( NoteProxy.class.getName() );
+    public static final String FILE_EXT = ".md";
     
-    private NoteProxy(String path, String title, TagSet tags)
+    private NoteProxy(
+                Notebook notebook,
+                Id id,
+                long fileChangedTime,
+                String title,
+                Date creation,
+                Date modification,
+                TagSet tags)
     {
-        this.id = null;
-        this.path = path;
+        this.id = id;
+        this.notebook = notebook;
+        this.fileChangedTime = fileChangedTime;
         this.title = title;
         this.tags = tags;
+        this.creationDate = creation;
+        this.modificationDate = modification;
         this.note = null;
     }
     
-    private NoteProxy(Note note)
+    private NoteProxy(Notebook notebook, Note note)
     {
         this.id = note.getId();
-        this.path = "";
+        this.fileChangedTime = System.currentTimeMillis();
+        this.notebook = notebook;
         this.note = note;
         this.title = note.getTitle();
         this.tags = note.getTags();
+        this.creationDate = note.getCreationDate();
+        this.modificationDate = note.getModificationDate();
     }
     
     /** @return the path to the note. */
     public String getPath()
     {
-        String toret = this.path;
-        
-        if ( toret.isBlank() ) {
-            toret = this.note.getFileName();
-        }
-        
-        return toret;
+        return this.buildPath();
     }
     
     /** @return the id from the file name. */
     public Id getId()
     {
         if ( this.id == null ) {
-            this.id = Id.from( Path.of( this.getPath() ) );
+            this.id = new Id();
         }
         
         return this.id;
@@ -87,6 +97,30 @@ public final class NoteProxy {
         return toret;
     }
     
+    /** @return the last time the note's file was changed. */
+    public long getFileChangedTime()
+    {
+        return this.fileChangedTime;
+    }
+    
+    /** @return the creation date. */
+    public Date getCreationDate()
+    {
+        return this.creationDate;
+    }
+    
+    /** @return the modification date. */
+    public Date getModificationDate()
+    {
+        Date toret = this.modificationDate;
+        
+        if ( this.note != null ) {
+            toret = this.note.getModificationDate();
+        }
+        
+        return toret;
+    }
+    
     /** @return the real note. */
     public Note getNote()
     {
@@ -96,29 +130,29 @@ public final class NoteProxy {
     /** @return the note, loaded from storage, if needed. */
     private Note retrieve()
     {   
-        String text = "";
-        
         if ( this.note == null ) {
-            try (final var SCAN = new Scanner( new FileInputStream( this.path ))) {
-                SCAN.nextLine();                            // Ignore the title.
-                SCAN.nextLine();                            // Ignore the tags.
-
-                
-                while ( SCAN.hasNext() ) {
-                    text += SCAN.nextLine() + "\n";
-                }
-            } catch(NoSuchElementException | FileNotFoundException exc) {
+            try (final var FINPUT = new FileInputStream( this.getPath() ) ) {
+                this.note = Note.retrieveFrom( this.getId(), FINPUT );
+            } catch(NoSuchElementException | FileNotFoundException exc)
+            {
                 LOG.log( Level.WARNING, "no data found in note" );
+            } catch(IOException exc) {
+                LOG.log( Level.WARNING, "unable to load: " + exc );
             }
-            
-            this.note = new Note(   this.getId(),
-                                    this.getTitle(),
-                                    this.getTags(),
-                                    text );
         }
         
+        assert this.note != null: "INTERNAL: note is still null!!";
         return this.note;
     }
+    
+    /** @return the name of the file. */
+    public String buildPath()
+    {
+        String toret =  this.getId().toString() + FILE_EXT;
+
+        return new File( this.notebook.getPath(), toret ).getAbsolutePath();
+    }
+
     
     /** Saves the note, provided the note has been loaded.
       *  Otherwise, it is ignored.
@@ -128,14 +162,18 @@ public final class NoteProxy {
     public void save(String pathToNotesDir) throws IOException
     {
         if ( this.note != null ) {
-            try {
-                this.note.save( pathToNotesDir );
+            final String PATH = this.buildPath();
+            
+            try (final var FILE_OUT = new FileOutputStream( PATH )) {
+                this.note.save( FILE_OUT );
             } catch(IOException exc) {
                 String errorMsg = "unable to save note: "
                                         + this.getId()
                                         + "\n" + exc.getMessage();
                 LOG.severe( errorMsg );
                 throw new IOException( errorMsg );
+            } finally {
+                this.fileChangedTime = new File( PATH ).lastModified();
             }
         }
     }
@@ -143,16 +181,15 @@ public final class NoteProxy {
     /** Delete the note. */
     public void delete()
     {
+        final Path PATH = Path.of( this.getPath() );
         try {
-            if ( !Files.deleteIfExists( Path.of( this.path ) ) ) {
+            if ( !Files.deleteIfExists( PATH ) ) {
                 LOG.warning(
-                        String.format( "unable to delete note at: '%s'",
-                                          this.path ));
+                    String.format( "unable to delete note at: '%s'", PATH ));
             }
         } catch(IOException exc) {
                 LOG.warning(
-                        String.format( "I/O deleting note at: '%s'",
-                                          this.path ));
+                    String.format( "I/O deleting note at: '%s'", PATH ));
         }
     }
         
@@ -180,59 +217,55 @@ public final class NoteProxy {
         return this.getTitle();
     }
     
-    /** Loads the relevant part of a note.
+    /** Loads only part of a note, i.e., title, dates and tags.
+      * @param notebook the notebook this proxy pertains to.
       * @param path the path to the note.
       * @return a new NoteProxy object.
       */
-    public static NoteProxy load(String path)
+    public static NoteProxy semiLoad(Notebook notebook, String path)
     {
-        TagSet tags = new TagSet();
-        String title = "";
+        NoteDto noteDto = new NoteDto();
+        long fileChangedTime = new File( path ).lastModified();
+        final Id ID = Id.from( Path.of( path ) );
         
-        
-        try (final var SCAN = new Scanner( new FileInputStream( path ) )) {
-            title = cleanTitle( SCAN.nextLine() );
-            tags.addAllFromString( SCAN.nextLine() );
-        } catch(NoSuchElementException | FileNotFoundException exc) {
+        try (final var SCANNER = new Scanner( new FileInputStream( path ) ))
+        {
+            noteDto = NoteDto.metaDatafromScanner( SCANNER );
+        } catch(IllegalArgumentException exc)
+        {
+            LOG.log( Level.SEVERE, "illegal format: " + exc );
+        }
+        catch(NoSuchElementException | FileNotFoundException exc)
+        {
             LOG.log( Level.WARNING, "no data found in note" );
         }
-
-        return new NoteProxy( path, title, tags );
-    }
-    
-    /** Remove the MD title prefix: "#" for title.
-      * @param title the title, as in "# Title"
-      * @return the given title, as in "Title"
-      */
-    private static String cleanTitle(String title)
-    {
-        if ( title == null ) {
-            title = "";
-        }
         
-        title = title.trim();
-        
-        if ( !title.isEmpty() ) {
-            if ( title.charAt( 0 ) == '#' ) {
-                title = title.substring( 1 ).trim();
-            }
-        }
-        
-        return title;
+        return new NoteProxy(
+                        notebook,
+                        ID,
+                        fileChangedTime,
+                        noteDto.title(),
+                        noteDto.dateCreation(),
+                        noteDto.dateModification(),
+                        noteDto.tags() );
     }
     
     /** Creates a NoteProxy from an existing note.
+      * @param notebook the notebook this proxy pertains to.
       * @param note the note to create the proxy from.
       * @return a new proxy.
       */
-    public static NoteProxy fromNote(Note note)
+    public static NoteProxy fromNote(Notebook notebook, Note note)
     {
-        return new NoteProxy( note );
+        return new NoteProxy( notebook, note );
     }
     
     private Id id;
-    private final String path;
+    private long fileChangedTime;
+    private final Notebook notebook;
     private final String title;
     private final TagSet tags;
+    private final Date creationDate;
+    private final Date modificationDate;
     private Note note;
 }
