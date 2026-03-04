@@ -36,6 +36,28 @@ public class Id {
     }
     
     @Override
+    public int hashCode()
+    {
+        return this.id.hashCode();
+    }
+    
+    @Override
+    public boolean equals(Object obj)
+    {
+        if ( this == obj ) {
+            return true;
+        }
+        
+        boolean toret = false;
+        
+        if ( obj instanceof final Id OTHER_ID ) {
+            toret = ( this.id.equals( OTHER_ID.get() ) );
+        }
+        
+        return toret;
+    }
+    
+    @Override
     public String toString()
     {
         return this.id.toString()
