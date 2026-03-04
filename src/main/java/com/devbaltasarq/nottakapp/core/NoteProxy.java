@@ -185,7 +185,8 @@ public final class NoteProxy {
     public boolean save(String pathToNotesDir, boolean ignoreDirty) throws IOException
     {
         boolean toret = false;
-        boolean needsSave = ( this.note.isDirty() || ignoreDirty );
+        boolean needsSave = ( ( this.note != null && this.note.isDirty() ) 
+                              || ignoreDirty );
         
         if ( this.note != null ) {
             final String PATH = this.buildPath();
