@@ -95,26 +95,68 @@ public final class Notebook {
         }
     }
     
-    public static Notebook restoreFrom(String path)
+    /** Reads the metadata for notes in the path, and picks the new ones. */
+    public void update()
     {
-        final var TORET = new Notebook( path );
-        final File DIR = new File( path );
+        final List<String> NOTE_PATHS = loadNotePathsFrom( this.getPath() );
+        final var PROXIES = new ArrayList<NoteProxy>( NOTE_PATHS.size() );
+        
+        // Read all proxies
+        for(String subPath: NOTE_PATHS) {
+            PROXIES.add( NoteProxy.semiLoad( this, subPath ) );
+        }
+        
+        // Pick those new proxies
+        for(NoteProxy noteProxy: PROXIES) {
+            // Add it if not already present
+            if ( this.lookUp( noteProxy.getId() ) == null ) {
+                this.add( noteProxy );
+            }
+        }
+    }
+    
+    private static List<String> loadNotePathsFrom(String path)
+    {
+        final var TORET = new ArrayList<String>();
+        final var DIR = new File( path );
         final FileFilter FF = 
                     (file) -> file.getName().endsWith( NoteProxy.FILE_EXT );
         
-        // Chk the actual directory
-        assert DIR.isDirectory(): "Notebook.restoreFrom(): notes path is not a directory";
-        
         for (final File fileEntry : DIR.listFiles( FF )) {
             try {
-                TORET.add( NoteProxy.semiLoad(
-                                            TORET,
-                                            fileEntry.getCanonicalPath()) );
+                TORET.add( fileEntry.getCanonicalPath() );
             } catch(IOException exc) {
-                LOG.warning( "error loading: " + fileEntry );
+                LOG.warning(
+                        String.format( "error browsing '%s' in '%s'",
+                                            fileEntry, path ) );
             }
         }
         
+        return TORET;
+    }
+    
+    /** Reads all files from the notes directory, loading the metadata.
+      * @param path the path to read the notes from.
+      * @return a new Notebook object, with all the notes read.
+      */
+    public static Notebook restoreFrom(String path)
+    {
+        File dir = new File( path );
+        
+        // Chk the actual directory
+        if ( !dir.isDirectory() ) {
+            LOG.warning( "Notebook.restoreFrom(): notes path is not a directory" );
+            dir = dir.getParentFile();
+        }
+        
+        // Read the entries of the notebook
+        final String PATH = dir.getAbsolutePath();
+        final var TORET = new Notebook( PATH );
+        
+        for(String subPath: loadNotePathsFrom( PATH )) {
+            TORET.add( NoteProxy.semiLoad( TORET, subPath ) );
+        }
+
         return TORET;
     }
     

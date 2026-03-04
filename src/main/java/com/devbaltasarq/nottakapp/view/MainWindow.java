@@ -169,6 +169,7 @@ public class MainWindow {
         this.setStatus( MSG_UPDATING );
         LOG.entering( "MainWindow", "update" );
         
+        this.notebook.update();
         this.notesTree.refreshAll();
         this.notesTree.expandAll();
         this.updateEditor( this.currentNote );
