@@ -169,9 +169,16 @@ public class MainWindow {
         this.setStatus( MSG_UPDATING );
         LOG.entering( "MainWindow", "update" );
         
-        this.notebook.update();
-        this.notesTree.refreshAll();
-        this.notesTree.expandAll();
+        new Runnable() {
+            public void run() {
+                final var SELF = MainWindow.this;
+                
+                SELF.notebook.update();
+                SELF.notesTree.refreshAll();
+                SELF.notesTree.expandAll();
+            }
+        }.run();
+
         this.updateEditor( this.currentNote );
         
         if ( this.currentNote == null ) {
