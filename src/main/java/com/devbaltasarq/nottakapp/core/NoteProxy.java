@@ -128,12 +128,30 @@ public final class NoteProxy {
         return this.retrieve();
     }
     
+    /** Determines whether the note must be retrieved.
+      * @return true if the note must be retrieved, false otherwise.
+      */
+    private boolean mustRetrieve()
+    {
+        boolean toret = ( this.note == null );
+        
+        if ( !toret ) {
+            // Maybe the current note is outdated.
+            File noteFile = new File( this.getPath() );
+            
+            toret = ( noteFile.lastModified() > this.getFileChangedTime() );
+        }
+        
+        return toret;
+    }
+    
     /** @return the note, loaded from storage, if needed. */
     private Note retrieve()
     {   
-        if ( this.note == null ) {
+        if ( mustRetrieve() ) {
             try (final var FINPUT = new FileInputStream( this.getPath() ) ) {
                 this.note = Note.retrieveFrom( this.getId(), FINPUT );
+                this.fileChangedTime = new File( this.getPath() ).lastModified();
             } catch(NoSuchElementException | FileNotFoundException exc)
             {
                 LOG.log( Level.WARNING, "no data found in note" );
