@@ -50,12 +50,14 @@ public final class Notebook {
     /** @return a list containing all the notes. */
     public List<NoteProxy> getAllNotes()
     {
+        this.update();
         return new ArrayList<>( this.notesIndexed.values() );
     }
     
     /** @return a set containing the ids for all notes. */
     public Set<Id> getAllIds()
     {
+        this.update();
         return this.notesIndexed.keySet();
     }
     
@@ -85,32 +87,14 @@ public final class Notebook {
       */
     public void saveAll(String pathToNotesDir)
     {
+        this.update();
+
         for(NoteProxy noteProxy: this.notesIndexed.values()) {
             try {
                 noteProxy.save( pathToNotesDir );
             } catch(IOException exc) {
                 LOG.warning( String.format( "[IO][ERR] skipping: %s",
                                                 noteProxy.getId() ) );
-            }
-        }
-    }
-    
-    /** Reads the metadata for notes in the path, and picks the new ones. */
-    public void update()
-    {
-        final List<String> NOTE_PATHS = loadNotePathsFrom( this.getPath() );
-        final var PROXIES = new ArrayList<NoteProxy>( NOTE_PATHS.size() );
-        
-        // Read all proxies
-        for(String subPath: NOTE_PATHS) {
-            PROXIES.add( NoteProxy.semiLoad( this, subPath ) );
-        }
-        
-        // Pick those new proxies
-        for(NoteProxy noteProxy: PROXIES) {
-            // Add it if not already present
-            if ( this.lookUp( noteProxy.getId() ) == null ) {
-                this.add( noteProxy );
             }
         }
     }
@@ -135,6 +119,39 @@ public final class Notebook {
         return TORET;
     }
     
+    /** Reads the metadata for notes in the path, and picks the new ones. */
+    public void update()
+    {
+        final List<String> NOTE_PATHS = loadNotePathsFrom( this.getPath() );
+        final var PROXIES = new ArrayList<NoteProxy>( NOTE_PATHS.size() );
+
+        // Read all proxies
+        for(String subPath: NOTE_PATHS) {
+            PROXIES.add( NoteProxy.semiLoad( this, subPath ) );
+        }
+
+        // Copy the old proxies
+        final var OLD_NOTES = new HashMap<Id, NoteProxy>( this.notesIndexed );
+        this.notesIndexed.clear();
+
+        // Pick those new proxies
+        for(NoteProxy noteProxy: PROXIES) {
+            // Add it if was not already present
+            final var OLD_NOTE = OLD_NOTES.get( noteProxy.getId() );
+            var newNote = noteProxy;
+
+            if ( OLD_NOTE != null ) {
+                newNote = OLD_NOTE;
+            }
+
+            this.add( newNote );
+        }
+
+        PROXIES.clear();
+        OLD_NOTES.clear();
+        NOTE_PATHS.clear();
+    }
+
     /** Reads all files from the notes directory, loading the metadata.
       * @param path the path to read the notes from.
       * @return a new Notebook object, with all the notes read.
