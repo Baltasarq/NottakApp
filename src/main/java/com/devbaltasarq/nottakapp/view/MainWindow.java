@@ -105,7 +105,7 @@ public class MainWindow {
         if ( !this.working ) {
             this.working = true;
             this.notebook.delete( this.currentNote );
-            this.notesTree.refreshAll();
+            this.notesTree.refresh();
             this.editor.setNote( null );
             this.working = false;
         }
@@ -174,7 +174,7 @@ public class MainWindow {
                 final var SELF = MainWindow.this;
                 
                 SELF.notebook.update();
-                SELF.notesTree.refreshAll();
+                SELF.notesTree.refresh();
                 SELF.notesTree.expandAll();
             }
         }.run();

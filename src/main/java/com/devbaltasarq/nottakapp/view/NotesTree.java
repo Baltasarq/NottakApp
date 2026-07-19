@@ -89,7 +89,7 @@ public class NotesTree {
         this.expandAll();
     }
     
-    public void update()
+    private void update()
     {
         final var MODEL = (DefaultTreeModel) this.getView().getModel();
         final var ROOT = this.getRoot();
@@ -98,7 +98,7 @@ public class NotesTree {
         MODEL.reload();
     }
     
-    public void refreshAll()
+    public void refresh()
     {
         final var ALL_NOTES_PROXY = this.notebook.getAllNotes();
         
