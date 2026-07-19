@@ -209,7 +209,7 @@ public final class NoteProxy {
         if ( this.note != null ) {
             final String PATH = this.buildPath();
             long currentFileChangedTime = new File( PATH ).lastModified();
-            
+
             // Chk file on disk
             if ( this.fileChangedTime < currentFileChangedTime ) {
                 // The note has changed on disk
@@ -225,7 +225,7 @@ public final class NoteProxy {
                     LOG.warning( "note on disk more updated but corrupted" );
                 }
             }
-            
+
             // Normal save
             if ( needsSave ) {
                 try (final var FILE_OUT = new FileOutputStream( PATH )) {
@@ -240,7 +240,7 @@ public final class NoteProxy {
                 }
             }
         }
-        
+
         return toret;
     }
     
@@ -248,6 +248,7 @@ public final class NoteProxy {
     public void delete()
     {
         final Path PATH = Path.of( this.getPath() );
+
         try {
             if ( !Files.deleteIfExists( PATH ) ) {
                 LOG.warning(

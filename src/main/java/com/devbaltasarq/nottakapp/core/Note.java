@@ -176,7 +176,7 @@ public class Note {
             this.resetDirty();
         }
     }
-    
+        
     /** @return the title of the note. */
     @Override
     public String toString()
