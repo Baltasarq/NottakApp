@@ -1,6 +1,6 @@
 # Notakkapp
 
-![Notakapp screenshort](notakapp.png)
+![Notakapp screenshort](nottakapp.png)
 
 ## Install Java
 
